@@ -1,0 +1,40 @@
+ -- Uma biblioteca simples para manipulacao de grafos --
+Criado por : Flavio Keidi Miyazawa (fkm@ic.unicamp.br)
+
+- Compilacao
+
+./build
+
+- Limpeza de arquivos de compilacao
+
+./clean
+
+- Execucao do programa de geracao da arvore de Gomory-Hu
+
+./gh <grafo>
+
+- Formato do grafo de entrada
+
+<num vertices> <num arestas>
+<vert1> 
+<vert2>
+.
+.                   /* lista de vertices */
+.
+<vertn>
+
+<v1> <v2> <cap12>
+.
+.
+.                  /* lista de arcos com as respectivas capacidades */
+.
+                       
+o arquivo grafo.in eh um exemplo de grafo de entrada.
+
+- exemplo de linha de execucao
+
+./gh grafo.in
+
+- Manual
+
+o arquivo manual.pdf apresenta um resumo das funcoes de manipulacao de grafos para a biblioteca usada.

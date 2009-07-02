@@ -1,0 +1,9 @@
+cd grafo
+cd myutil
+make clean
+cd ..
+cd ugraph
+make clean
+cd ..
+cd ..
+rm -f gh

@@ -1,0 +1,42 @@
+
+
+
+   Uma biblioteca simples para manipulação de grafos
+
+
+1. O diretório myutils deve estar no mesmo nível que o 
+   diretório ugraph 
+
+2. Voce deve deixar o programa neato (está em ugraph/bin) 
+   acessível pelos programas que vao usar a biblioteca de grafos.
+   Basta por exemplo que você inclua no seu PATH o diretório onde
+   está ugraph/bin, ou copie o arquivo neato para o seu diretório
+   bin. Este é para linux. Há outros programas para windows no 
+   diretório ugraph/bin-windows.
+   Para saber mais sobre o neato, procure por "graphviz" e "att".
+
+3. Para compilar compilar a bibliteca, digite neste diretorio
+
+   make
+
+   Isto deve gerar as bibliotecas, o exemplo e o manual.
+
+4. Há instâncias de grafos no diretório
+   ugraph/instancias
+
+5. Para executar o exemplo ex-ugraph, sobre uma instância do grafo 
+   gr_50, entre com os seguintes dois comandos
+   
+   cd instancias
+   ../ex-ugraph/ex-ugraph gr_50
+
+   você poderá visualizar o grafo, alterar, mostrar a árvore geradora
+   de custo mínimo, mostrar a árvore de Gomory e Hu, mostrar o corte
+   mínimo (experimente "cut 20 41"),...
+
+6. Para ver a documentação das rotinas (manual precário),
+   veja o arquivo ugraph/doc/manual.pdf
+
+
+Sugestoes, correcoes, comentarios,..., escreva para 
+Flavio Keidi Miyazawa (fkm@ic.unicamp.br).

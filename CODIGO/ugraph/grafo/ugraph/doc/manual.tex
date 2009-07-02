@@ -1,0 +1,603 @@
+\documentclass[11pt]{article}
+\usepackage{times}
+\usepackage[brazil]{babel}
+\usepackage[latin1]{inputenc} 
+\usepackage{epsf,epsfig,graphicx,multicol}
+\usepackage{makeidx}
+\setlength{\textwidth}{42pc}
+\setlength{\textheight}{58pc}
+\setlength\oddsidemargin{-1cm}  
+\setlength\evensidemargin{-1cm}  
+\setlength{\topmargin}{-5mm}
+\setlength{\parskip}{0pc}
+\setlength{\paperwidth}{216mm}
+\setlength{\paperheight}{279mm}
+\newcommand{\rotina}[1]{\item[\index{#1}{\tt #1:\ \ignorespaces}]}
+\makeindex
+\begin{document}
+
+\centerline{\Large\sc UGRAPH: Biblioteca para Manipulação de Grafos} 
+
+\centerline{\large\sc Flávio Keidi Miyazawa \ \ \ -- \ \ \ IC-UNICAMP}
+\centerline{\tt fkm@ic.unicamp.br \ \
+www.ic.unicamp.br/\textasciitilde fkm/ugraph}
+
+\centerline{\bf Última atualização: 24 de setembro de 2002}
+
+\tableofcontents
+\section{Introdução}
+
+A biblioteca {\sc ugraph} está escrita em C ANSI e é voltada para a
+manipulação de grafos simples e não orientados. A biblioteca faz uso de
+outros programas disponíveis na rede. Usa o programa {\sc neato} para
+a visualização dos grafos e usa algumas rotinas disponibilizadas pelo
+ZIB-Berlin. 
+
+Esta biblioteca está na versão 0 (talvez seja melhor colocar versão
+-1). Por ser a primeira versão disponibilizada para alunos, peço por
+favor que sempre que for localizado um erro, me avise no email {\tt
+fkm@ic.unicamp.br} para que eu possa corrigir e atualizar a página.
+\begin{flushright}
+Obrigado,\medskip
+
+Flávio.
+\end{flushright}
+\section{Header}
+Para usar a biblioteca, use o header\\
+{\tt \#include \"{}ugraph.h\"{}}
+\section{Sistema Operacional}
+Esta biblioteca está fácil para ser testada tanto em ambiente Linux
+como em ambiente Windows. 
+
+Para isso, declare as seguintes variáveis globais:\\
+{\tt extern gr\_os\_type gr\_sistema;}\\
+{\tt extern gr\_outputtype gr\_output;}\\
+Depois, atribua valores para estas variáveis, no início do programa
+principal, conforme o sistema operacional.
+\begin{description}
+\item[Windows]\mbox{}\\
+   {\tt gr\_sistema = GR\_WINDOWS;}\\
+   {\tt gr\_output = GR\_GIF\_WINDOWS;}
+\item[Linux]\mbox{}\\
+   {\tt gr\_sistema = GR\_LINUX;}\\
+   {\tt gr\_output = GR\_POSTSCRIPT\_LINUX;}
+\end{description}
+Em Windows, o programa para visualização dos grafos é realizado
+através do programa {\sc Paintbrush}. Em Linux, a visualização é feita
+através do programa {\sc gv}. Veja um exemplo de uso no programa {\tt
+exemplo.c}. Neste arquivo estão listados outras alternativas de
+visualização. 
+
+\section{Tipos}
+\begin{description}
+\rotina{graphtype} Este é o principal tipo que você deve usar nesta
+biblioteca. É o tipo do grafo.
+
+\rotina{boolean} Este tipo pode ter um de dois valores: {\tt false}
+(falso) ou {\tt true} (verdadeiro).
+
+\rotina{colortype} Vértices e arestas podem ter cor. Algumas cores
+possíveis são: {\tt BLACK, WHITE, RED, GREEN, BLUE}.
+\end{description}
+
+
+\section{Rotinas da biblioteca}
+Dividimos as rotinas desta biblioteca nas seguintes seções:
+manipulação de grafos, manipulação de vértices, manipulação de
+arestas, adjacência de arestas, visualização do grafo, algoritmos em
+grafos e rotinas auxiliares.
+
+A seguir detalhamos cada uma delas:
+
+\subsection{Rotinas para manipulação de grafos}
+\begin{description}
+%\rotina{gr\_initgraph} Inicializa um grafo do tipo {\tt graphtype}.\\
+%{\it protótipo:} {\tt boolean gr\_initgraph(graphtype *g,int maxvertex,int maxedges)}\\
+%resultado: {\tt true} se teve sucesso ao inicializar a estrutura, {\tt
+%false} caso contrário. Em caso de sucesso, o grafo é inicializado como
+%um grafo vazio, sem nenhum vértice e sem nenhuma aresta.\\
+%{\tt g:} é ponteiro para uma variável do tipo {\tt graphtype}, \\
+%{\tt maxvertex:} é o número máximo de vértices que o grafo poderá ter
+%(poderá ter qualquer quantidade de vértices entre 0 e {\tt maxvertex})\\
+%{\tt maxedges:} é o número máximo de arestas que o grafo poderá ter
+%(poderá ter qualquer quantidade de arestas entre 0 e {\tt maxedges})\\
+%A quantidade de memória alocada é proporcional a {\tt maxvertex+maxedges}.
+
+\rotina{gr\_creategraph} Inicializa um grafo do tipo {\tt graphtype}.\\
+Retorna o ponteiro do grafo criado.
+{\it protótipo:} {\tt graphtype * gr\_creategraph(int maxvertex,int maxedges)}\\
+resultado: ponteiro do grafo, NULL se não conseguiu criar.
+{\tt maxvertex:} é o número máximo de vértices que o grafo poderá ter
+(poderá ter qualquer quantidade de vértices entre 0 e {\tt maxvertex})\\
+{\tt maxedges:} é o número máximo de arestas que o grafo poderá ter
+(poderá ter qualquer quantidade de arestas entre 0 e {\tt maxedges})\\
+A quantidade de memória alocada é proporcional a {\tt maxvertex+maxedges}.
+
+\rotina{gr\_closegraph} Libera a memória alocada para o 
+grafo.\\
+{\it protótipo:} {\tt void gr\_closegraph(graphtype *g)}\\
+{\tt g:} é ponteiro para o grafo.
+
+\rotina{gr\_setgraphname} Comando para atribuir um nome ao grafo.\\
+{\it protótipo:} {\tt boolean gr\_setgraphname(graphtype *g,char *s)}\\
+resultado: {\tt true} se obteve sucesso, {\tt false} caso contrário.\\
+{\tt g:} é ponteiro para o grafo.\\
+{\tt s:} ponteiro para o novo nome do grafo.
+
+\rotina{gr\_getgraphname} Comando para obter o nome do grafo.\\
+{\it protótipo:} {\tt boolean gr\_getgraphname(graphtype *g,char *s)}\\
+resultado: {\tt true} se obteve sucesso, {\tt false} caso contrário.\\
+{\tt g:} é ponteiro para o grafo.\\
+{\tt s:} ponteiro para gravar nome do grafo.
+
+\rotina{gr\_writegraph} grava um grafo no formato padrao usado pelo
+programa (arquivo texto).\\ 
+Na primeira linha do programa devem vir 2 numeros, digamos $N$ e $M$
+que são os números de vértices e de arestas. Depois devem vir $N$
+linhas, cada linha contém o nome de um vértice. Depois devem vir $M$
+linhas, uma para cada aresta. Cada linha de aresta tem os nomes dos
+extremos e depois vem o peso da aresta (separados por espaços em branco).\\
+{\it protótipo:} {\tt boolean gr\_writegraph(graphtype *g,char *filename)}\\
+resultado: {\tt true} se obteve sucesso, {\tt false} caso contrário.\\
+{\tt g:} é ponteiro para o grafo.\\
+{\tt filename:} nome do arquivo de saída.
+
+\rotina{gr\_readgraph} lê um grafo no formato padrão usado pelo
+programa.\\ 
+{\it protótipo:} {\tt boolean gr\_readgraph(graphtype *g,char *filename)}\\
+resultado: {\tt true} se obteve sucesso, {\tt false} caso contrário.\\
+{\tt g:} é ponteiro para o grafo.\\
+{\tt filename:} nome do arquivo de entrada.
+
+\rotina{gr\_cleangraph} faz uma cópia do grafo, mas com os índices dos
+vértices e arestas seqüênciais. Útil quando queremos usar os índices
+das arestas e vértices iguais a $0,1,\ldots,$, seqüêncialmente (sem
+índices no meio da seqüência que não estejam usados). Um exemplo onde isso
+pode ocorrer é na indexação das colunas de um programa linear.\\
+{\it protótipo:} {\tt boolean gr\_cleangraph(graphtype *dest,graphtype *source)}\\
+resultado: {\tt true} se obteve sucesso, {\tt false} caso contrário.\\
+{\tt source:} ponteiro para o grafo original, o grafo continua
+existindo depois da operação. \\  
+{\tt dest:} ponteiro para o grafo destino.
+
+\rotina{gr\_getcleangraph} como a rotina {\tt gr\_cleangraph}, mas
+retorna um ponteiro para o grafo gerado.\\
+{\it protótipo:} {\tt graphtype * gr\_getcleangraph(graphtype *g)}\\
+resultado: ponteiro para o novo grafo, {\tt NULL} se não teve sucesso.\\
+{\tt g:} ponteiro para o grafo original, o grafo continua
+existindo depois da operação. 
+
+\rotina{gr\_writegraph\_neato} gravar um grafo no formato usado pelo programa
+{\sc neato}.\\
+{\it protótipo:} {\tt boolean gr\_writegraph\_neato(graphtype *g,char *filename)}\\ 
+resultado: {\tt true} se obteve sucesso, {\tt false} caso contrário.\\
+{\tt g:} é ponteiro para o grafo.\\
+{\tt filename:} nome do arquivo de saida.
+
+\rotina{gr\_number\_components} retorna o número de componentes do grafo\\
+{\it protótipo:} {\tt int gr\_number\_components(graphtype *g)}\\
+resultado: caso tenha problemas para acessar {\tt g}, retorna -1.\\
+{\tt g:} é ponteiro para o grafo.
+
+\rotina{gr\_number\_vertices} retorna o número de vértices do grafo\\
+{\it protótipo:} {\tt int gr\_number\_vertices(graphtype *g)}\\
+resultado: caso tenha problemas para acessar {\tt g}, retorna -1.\\
+{\tt g:} é ponteiro para o grafo.
+
+\rotina{gr\_number\_edges} retorna o número de arestas do grafo\\
+{\it protótipo:} {\tt int gr\_number\_arestas(graphtype *g)}\\
+resultado: caso tenha problemas para acessar {\tt g}, retorna -1.\\
+{\tt g:} é ponteiro para o grafo.
+
+\end{description}
+
+\subsection{rotinas para manipulação de vértices}
+Os vertices são armazenadas em uma lista ligada combinada com
+vetor. Assim, é possivel percorrer os vértices usados através da lista
+ligada, obtendo o primeiro vértice e o vértice seguinte a outro.
+Cada vértice tem um índice e um nome. Dois vértices distintos tem
+índices distintos. Se nunca for removido um vértice durante a
+construção de um grafo, então os índices dos vértices do grafo serão
+$0,1,2,\ldots,n-1$, onde $n$ é o número de vértices do grafo. 
+
+\begin{description}
+\rotina{gr\_getfirstvertex} retorna o primeiro vértice do grafo.\\
+{\it protótipo:} {\tt int gr\_getfirstvertex(graphtype *g)}\\
+resultado: retorna o índice do primeiro vértice da lista de vértices.\\
+{\tt g:} é ponteiro para o grafo.
+
+\rotina{gr\_getnextvertex} dado um vértice, retorna o próximo vértice
+do grafo.\\ 
+{\it protótipo:} {\tt int gr\_getnextvertex(graphtype *g,int v)}\\
+resultado: retorna o índice do próximo vértice, depois de {\tt v}.\\
+{\tt g:} é ponteiro para o grafo.\\
+{\tt v:} é índice do vértice do qual se quer o próximo.
+
+\rotina{gr\_getvertexindex} dado o nome de um vértice, retorna o
+índice do vértice no grafo.\\ 
+{\it protótipo:} {\tt int gr\_getvertexindex(graphtype *g,char *name)}\\
+resultado: retorna o índice do vértice com nome {\tt name}. Retorna -1
+se não encontrou.\\
+{\tt g:} é ponteiro para o grafo.\\
+{\tt name:} nome do vértice procurado.
+
+\rotina{gr\_existsvertex} verifica a existência de um vértice.\\ 
+{\it protótipo:} {\tt boolean gr\_existsvertex(graphtype *g,int v)}\\
+resultado: retorna {\tt true} se existe um vértice com índice {\tt v},
+e retorna {\tt false} caso contrário.\\
+{\tt g:} é ponteiro para o grafo.\\
+{\tt v:} é índice do vértice do qual se quer verificar a existência.
+
+\rotina{gr\_insertvertex} insere um novo vértice no grafo.\\ 
+{\it protótipo:} {\tt int gr\_insertvertex(graphtype *g, char *name)}\\
+resultado: retorna -1 se não conseguiu inserir um novo vértice e
+retorna o índice do novo vértice caso tenha conseguido inserir novo
+vértice. Obs.: cuidado, estas rotinas reutilizam índice de vértices
+anteriormente removidos.\\
+{\tt g} é ponteiro para o grafo.\\
+{\tt name} é o nome do novo vértice, deve necessariamente ser
+diferente de qualquer outro vértice existente. Posteriormente
+melhoraremos a versão desta biblioteca para que contemple também 
+vértices sem nome.
+
+
+\rotina{gr\_getvertexname} obtém o nome de um vértice.\\ 
+{\it protótipo:} {\tt boolean gr\_getvertexname(graphtype *g,int v,char *name);}\\
+resultado: {\tt true} se obteve o nome, {\tt false} caso contrário.\\
+{\tt g:} é ponteiro para o grafo.\\
+{\tt v:} é o índice do vértice em {\tt g}.\\
+{\tt name:} ponteiro onde será copiado o nome do vértice.
+
+\rotina{gr\_vertexname} retorna o ponteiro do nome de um vértice.\\ 
+{\it protótipo:} {\tt char *gr\_vertexname(graphtype *g,int v);}\\
+resultado: {\tt true} se obteve o nome, {\tt false} caso contrário.\\
+{\tt g:} é ponteiro para o grafo.\\
+{\tt v:} é o índice do vértice em {\tt g}.
+\end{description}
+
+
+\subsection{rotinas para manipulação de arestas}
+As arestas são armazenadas em uma lista ligada combinada com
+vetor. É possivel percorrer as arestas usadas através da lista
+ligada, obtendo a primeira aresta e a aresta seguinte a
+outra. 
+
+As arestas que são incidentes a um vértice também são
+armazenadas em uma lista ligada (para cada vértice) e também podem ser
+percorridas de forma análoga.
+
+Cada aresta tem um índice. Duas arestas distintas têm índices
+distintos. Se nunca for removido uma aresta durante a construção de um
+grafo, então os índices das arestas no grafo serão $0,1,2,\ldots,m-1$,
+onde $m$ é o número total de arestas no grafo.
+
+Dado um par $(u,v)$ correspondente a uma aresta (onde $u$ e $v$ são os
+índices dos vértices extremos de uma aresta), é possível recuperar
+rapidamente seu índice (tempo médio constante).
+
+\begin{description}
+\rotina{gr\_insertedge} insere uma aresta no grafo.\\
+{\it protótipo:} {\tt int gr\_insertedge(graphtype *g,char *name,int u,int v,double weight)}\\
+resultado: {\tt false} se já existe uma aresta com os extremos\\
+{\tt u} e {\tt v}, ou se ocorrer um caso de inviabilidade; caso
+contrário retorna {\tt true}.\\
+{\tt g:} é ponteiro para o grafo.\\
+{\tt name:} nome da aresta (por enquanto este dado não está sendo utilizado)\\
+{\tt u,v:} índices dos vértices extremos da aresta.\\
+{\tt weight:} peso da aresta.
+
+\rotina{gr\_getfirstedge} retorna a primeira aresta do grafo.\\
+{\it protótipo:} {\tt int gr\_getfirstedge(graphtype *g)}\\
+resultado: retorna o índice da primeira aresta da lista de arestas.\\
+{\tt g:} é ponteiro para o grafo.
+
+
+\rotina{gr\_getnextedge} dado uma aresta, retorna a próxima aresta do
+grafo.\\ 
+{\it protótipo:} {\tt int gr\_getnextedge(graphtype *g,int e)}\\
+resultado: retorna o índice da próxima aresta da lista de arestas,
+depois de {\tt e}.\\
+{\tt g:} é ponteiro para o grafo.
+
+\rotina{gr\_getedge} dado uma aresta através dos seus extremos,
+retorna o índice da aresta.\\
+{\it protótipo:} {\tt int gr\_getedge(graphtype *g,int u, int v)}\\
+resultado: índice da aresta, dado os índices dos vértices
+extremos da aresta. Se não houver aresta, retorna -1.\\
+{\tt g:} é ponteiro para o grafo.\\
+{\tt u,v:} são índices para os vértices que são extremos da aresta.
+
+
+\rotina{gr\_getedgename} obtém o nome de uma aresta.\\ 
+{\it protótipo:} {\tt boolean gr\_getedgename(graphtype *g,int e,char *name)}\\
+resultado: {\tt true} se obteve o nome, {\tt false} caso contrário.\\
+{\tt g:} é ponteiro para o grafo.\\
+{\tt e:} é o índice do aresta em {\tt g}.\\
+{\tt name:} é o nome onde será retornado o nome da aresta.
+
+\rotina{gr\_edgename} retorna o ponteiro do nome de uma aresta.\\ 
+{\it protótipo:} {\tt char * gr\_edgename(graphtype *g,int e)}\\
+resultado: ponteiro do nome da aresta, se não existir aresta retorna {\tt NULL}.\\
+{\tt g:} é ponteiro para o grafo.\\
+{\tt e:} é o índice do aresta em {\tt g}.
+
+\rotina{gr\_getedgehead} obtém um dos extremos de uma aresta (head).\\ 
+{\it protótipo:} {\tt int gr\_getedgehead(graphtype *g,int e)}\\
+resultado: índice do vértice que é o primeiro extremo de {\tt e:}.\\
+{\tt g:} é ponteiro para o grafo.\\
+{\tt e:} é o índice da aresta em {\tt g}.
+
+\rotina{gr\_getedgetail} obtém um dos extremos de uma aresta (tail).\\ 
+{\it protótipo:} {\tt int gr\_getedgehead(graphtype *g,int e)}\\
+resultado: índice do vértice que é o segundo extremo de
+{\tt e}.\\
+{\tt g:} é ponteiro para o grafo.\\
+{\tt e:} é o índice da aresta em {\tt g}.
+
+
+\rotina{gr\_existsedge} verifica se um índice é válido para uma aresta.\\
+{\it protótipo:} {\tt boolean gr\_existsedge(graphtype *g,int e)}\\
+resultado: retorna {\tt true} se existe uma aresta com índice {\tt e},
+e retorna {\tt false} caso contrário.\\
+{\tt g} é ponteiro para o grafo.\\
+{\tt e} é índice da aresta que se quer verificar a existência.
+
+\rotina{gr\_getedgeweight} obtém o peso de uma aresta.\\
+{\it protótipo:} {\tt boolean gr\_getedgeweight(graphtype *g,int e,double *peso)}\\
+resultado: {\tt true} se obteve o peso da aresta {\tt e}, e {\tt
+false} caso contrário.\\ 
+{\tt g:} é ponteiro para o grafo.\\
+{\tt e:} é índice da aresta que se quer verificar a existência,\\
+{\tt peso:} ponteiro para onde deve ser armazenado o peso da aresta.
+
+\rotina{gr\_edgeweight} retorna o peso de uma aresta.\\
+{\it protótipo:} {\tt double gr\_edgeweight(graphtype *g,int e)}\\
+resultado: peso da aresta,  da aresta {\tt e}, e {\tt
+MINIMUMDOUBLE} caso a aresta não exista.\\ 
+{\tt g:} é ponteiro para o grafo.\\
+{\tt e:} é índice da aresta que se quer verificar a existência.
+
+
+\rotina{gr\_setedgeweight} atribui o peso de uma aresta.\\
+{\it protótipo:} {\tt boolean gr\_setedgeweight(graphtype *g,int e,double peso)}\\
+resultado: {\tt true} se conseguiu atribuir o peso da aresta {\tt e},
+e {\tt false} caso contrário.\\
+{\tt g:} é ponteiro para o grafo.\\
+{\tt e:} é índice da aresta que se quer verificar a existência,\\
+{\tt peso:} novo peso a ser atribuído.
+\end{description}
+
+
+\subsection{rotinas para manipulação de arestas adjacentes a um vértice}
+As arestas que são incidentes a um vértice também são
+armazenadas como listas ligadas e também podem ser percorridas
+seqüencialmente.
+
+\begin{description}
+\rotina{gr\_getvertexfirstadj} retorna o índice da primeira aresta
+incidente a um vértice.\\
+{\it protótipo:} {\tt int gr\_getvertexfirstadj(graphtype *g,int v)}\\
+resultado: índice da primeira aresta da lista de incidência
+do vértice {\tt v}. Se o vértice não tem arestas, retorna -1.\\
+{\tt g:} é ponteiro para o grafo.\\
+{\tt v:} é o índice do vértice.
+
+\rotina{gr\_getvertexnextadj} dado uma aresta incidente a um vértice,
+retorna o índice da próxima aresta também incidente ao vértice.\\
+{\it protótipo:} {\tt int gr\_getvertexnextadj(graphtype *g,int v,int e)}\\
+resultado: índice da próxima aresta da lista de incidência
+do vértice de índice {\tt v}, depois da aresta {\tt e}. Se não houver
+próxima aresta incidente, retorna -1.\\ 
+{\tt g:} é ponteiro para o grafo.\\
+{\tt v:} é o índice do vértice,\\
+{\tt e:} é o índice da aresta incidente a {\tt v}.
+
+\end{description}
+
+\subsection{Rotinas para visualização do grafo}
+
+A visualização do grafo é realizada através de dois programas: {\sc
+neato} (para gerar um grafo em arquivo postscript/gif/jpg/...) e {\sc
+gv} (para visualizar um grafo gerado em postscript).
+
+O grafo pode ter cores nas arestas e nos vértices. Para ver a lista de
+cores, veja o tipo {\tt colortype}.
+
+\begin{description}
+
+\rotina{gr\_viewgraph} visualiza o grafo.\\
+este comando necessita que estejam instalados os programas
+{\sc neato} e ou o programa {\sc gv} (Linux), ou {\sc gsview}
+(Windows), ou o {\sc Paintbrush} (Windows).\\ 
+O programa {\sc neato} é obrigatório e pode ser obtido para Linux e
+Windows no link:\\
+{\tt http://www.research.att.com/sw/tools/graphviz/download.html}. No
+site está disponibilizado o programa {\tt neato.exe} para plataforma
+Windows. Obs.: As vezes o programa {\sc neato} gera um desenho diferente
+para um mesmo grafo.\\ 
+O programa {\sc
+gv} é para visualizar o grafo através de saida postscript. Para
+Windows, você pode usar no lugar do {\tt gv}, o programa {\tt gsview}
+(veja os comentários/código na rotina {\tt gr\_viewgraph} do arquivo {\tt
+ugraph.c} para saber como mudar). O {\tt gsview} pode ser obtido no
+link\\
+{\tt http://www.cs.wisc.edu/\textasciitilde ghost/gsview/}.\\
+Outra alternativa é não usar um visualizador de arquivos
+postscript. Mas alguma ferramenta que visualize arquivos .gif e
+.jpg. Um que é disponível em Windows é o programa {\sc Paintbrush}.\\
+{\it protótipo:} {\tt void gr\_viewgraph(graphtype *g)}
+{\tt g:} é ponteiro para o grafo.
+
+\rotina{gr\_setvertexcolor} pinta um vértice de uma cor.\\
+{\it protótipo:} {\tt boolean gr\_setvertexcolor(graphtype *g,int v,colortype cor)}\\
+resultado: {\tt true} se conseguiu pintar o vértice e {\tt false} caso
+contrário.\\ 
+{\tt g:} é ponteiro para o grafo.\\
+{\tt v:} é o índice do vértice a pintar,\\
+{\tt cor:} é a cor.
+
+\rotina{gr\_setedgecolor} pinta uma aresta de uma cor.\\
+{\it protótipo:} {\tt boolean gr\_setedgecolor(graphtype *g,int e,colortype cor)}\\
+resultado: {\tt true} se conseguiu pintar a aresta
+e retorna {\tt false} caso contrário.\\
+{\tt g:} é ponteiro para o grafo.\\
+{\tt e:} é o índice da aresta a pintar,\\
+{\tt cor:} é a cor.
+
+\rotina{gr\_getedgecolor} obtém a cor de uma aresta.\\
+{\it protótipo:} {\tt boolean gr\_getedgecolor(graphtype *g,int e,colortype *cor)}\\
+resultado: {\tt true} se conseguiu obter a cor da aresta
+e retorna {\tt false} caso contrário.\\
+{\tt g:} é ponteiro para o grafo.\\
+{\tt e:} é o índice da aresta a pintar,\\
+{\tt cor:} é o ponteiro para o local onde deve gravar a cor.
+
+\rotina{gr\_paintgraphedges} pinta todas as arestas do grafo.\\
+{\it protótipo:} {\tt void gr\_paintgraphedges(graphtype *g,colortype cor)}\\
+{\tt g:} é ponteiro para o grafo.\\
+{\tt cor:} é a cor.
+
+\rotina{gr\_paintvectoredges} pinta com uma cor as arestas do grafo,
+dadas através de um vetor.\\
+{\it protótipo:} {\tt void gr\_paintvectoredges(graphtype *g,int
+*edges, int nedges, colortype cor)}\\
+{\tt g:} é ponteiro para o grafo.\\
+{\tt edges:} ponteiro para o vetor dos índices das arestas.\\
+{\tt nedges:} número de arestas no vetor.\\
+{\tt cor:} é a cor.
+
+\rotina{gr\_paintgraphvertex} pinta todos os vértices do grafo.\\
+{\it protótipo:} {\tt void gr\_paintgraphvertex(graphtype *g,colortype cor)}\\
+{\tt g:} é ponteiro para o grafo.\\
+{\tt cor:} é a cor.
+
+\rotina{gr\_paintgraph} pinta todos os vértices e arestas do grafo
+com uma cor.\\
+{\it protótipo:} {\tt void gr\_paintgraph(graphtype *g,colortype cor)}\\
+{\tt g:} é ponteiro para o grafo.\\
+{\tt cor:} é a cor.
+
+\rotina{gr\_paintgraphscale} pinta todas as arestas do grafo, com
+uma escala simples, dependendo do peso. As arestas do grafo com peso
+entre maior que 2/3 são pintadas com {\tt blue}, as arestas com peso
+em (1/3,2/3] são pintadas com {\tt red} e as arestas com peso menor
+ou igual a 1/3 são pintadas de {\tt black}. a ser melhorado no futuro.\\
+{\it protótipo:} {\tt void gr\_paintgraphscale(graphtype *g)}\\
+{\tt g:} é ponteiro para o grafo.
+
+\rotina{gr\_paintsubgraph} pinta as arestas de um subgrafo de um
+grafo\\ dado um grafo {\tt g} e um subgrafo {\tt sub} (o subgrafo foi
+obtido do grafo) a rotina localiza as arestas através dos nomes do
+vértices. O grafo {\tt g} é inicialmente pintado de preto e as cores
+do subgrafo {\tt sub} são copiadas para o grafo {\tt g}\\ {\it
+protótipo:} {\tt void gr\_paintsubgraph(graphtype *g,graphtype
+*sub)}\\ {\tt g, sub:} é o ponteiro do grafo e do subgrafo,
+respectivamente.
+\end{description}
+
+\subsection{Rotinas para encontrar subgrafos e outras estruturas}
+
+Algumas rotinas para encontrar certas estruturas já foram
+desenvolvidas, como algoritmo para encontrar uma árvore geradora de
+peso mínimo, corte de peso mínimo separando dois vértices, árvore de
+cortes de Gomory-Hu, etc.
+
+Vamos exemplificar com o seguinte grafo (os desenhos dos grafos abaixo foram
+obtidos executando o programa exemplo.c):
+
+\centerline{\epsfxsize 5cm \centerline{\epsfbox{exg.eps}}}
+
+\begin{description}
+
+\rotina{gr\_minimumspanningtree} obtém uma árvore geradora de peso mínimo.\\
+{\it protótipo:} {\tt boolean gr\_minimumspanningtree(graphtype
+*gr,graphtype *mst)}\\
+resultado: {\tt true} se conseguiu gerar a árvore geradora de
+peso mínimo e {\tt false} caso contrário.\\
+{\tt g:} é o ponteiro para o grafo original\\
+{\tt mst:} é o ponteiro para onde vai ser gerado o subgrafo.
+
+\rotina{gr\_getminimumspanningtree} obtém uma árvore geradora de peso mínimo.\\
+{\it protótipo:} {\tt boolean gr\_getminimumspanningtree(graphtype
+*gr,int *mstedges, int *mstnedges)}\\
+resultado: {\tt true} se conseguiu gerar a árvore geradora de
+peso mínimo e {\tt false} caso contrário.\\
+{\tt mstedges:} é o ponteiro para um vetor onde os indices das arestas
+da árvore será armazenado\\
+{\tt mstnedges:} é o ponteiro para o local onde será armazenado o
+número de arestas da árvore.
+
+\centerline{\epsfxsize 5cm \centerline{\epsfbox{ext.eps}}}
+
+\rotina{gr\_min\_st\_cut} obtém um grafo que é o corte de peso mínimo
+separando dois vértices.\\
+{\it protótipo:} {\tt boolean gr\_min\_st\_cut(graphtype *g,int s\_g,int t\_g,
+		   graphtype *stcut,double *cutweight)}\\
+resultado: {\tt true} se conseguiu gerar o corte mínimo que
+separa o vértice {\tt s\_g} e o vértice {\tt t\_g}. Caso contrário
+retorna {\tt false}. \\
+{\tt g:} é o ponteiro para o grafo original\\
+{\tt stcut:} é o ponteiro para onde vai ser gerado o subgrafo que forma
+o corte mínimo.\\
+{\tt cutweight:} ponteiro para o local onde será gravado o peso do corte.
+
+\rotina{gr\_get\_min\_st\_cut} obtém um grafo que é o corte de peso mínimo
+separando dois vértices.\\
+{\it protótipo:} {\tt boolean gr\_get\_min\_st\_cut(graphtype *g,int
+s\_g,int t\_g, int *cutedges, int *ncutedges ,double *cutweight)}\\
+resultado: {\tt true} se conseguiu gerar o corte mínimo que
+separa o vértice {\tt s\_g} e o vértice {\tt t\_g}. Caso contrário
+retorna {\tt false}. \\
+{\tt g:} é o ponteiro para o grafo original\\
+{\tt cutedges:} é o ponteiro para um vetor onde serão armazenados os
+índices das arestas do corte.\\
+{\tt ncutedges:} é o ponteiro para o local onde será armazenado a
+quantidade de arestas do corte.\\
+{\tt cutweight:} ponteiro para o local onde será gravado o peso do corte.
+
+\centerline{\epsfxsize 8cm \centerline{\epsfbox{excut4-5.eps}}}
+
+
+\rotina{gr\_generate\_ghc\_tree} gera a árvore de cortes de Gomory-Hu.\\
+{\it protótipo:} {\tt void gr\_generate\_ghc\_tree(graphtype *g,graphtype *tree)}\\
+{\tt g:} é o ponteiro para o grafo original\\
+{\tt tree:} ponteiro para onde vai ser gerado a árvore de cortes de
+Gomory-Hu
+
+\centerline{\epsfxsize 5cm \centerline{\epsfbox{exgh.eps}}}
+
+
+\rotina{gr\_find\_min\_edge\_ghc\_tree} dado uma árvore de corte de
+Gomory-Hu e dois vértices desta árvore, retorna o índice da aresta que
+representa o menor corte\\
+{\it protótipo:} {\tt boolean  gr\_find\_min\_edge\_ghc\_tree(graphtype
+*tree,int s,int t,int *edgeindex)}\\
+resultado: {\tt true} se conseguiu gerar encontrar a aresta de
+peso mínimo que separa {\tt s} e o vértice {\tt t}. Caso contrário
+retorna {\tt false}. \\
+{\tt tree:} é o ponteiro para o grafo original\\
+{\tt s, t:} índices dos vértices da árvore para o qual queremos
+encontrar a aresta do corte mínimo.\\
+{\tt edgeindex:} ponteiro para o local onde será gravado o índice da
+aresta correspondente ao corte.
+\end{description}
+
+\subsection{Outras rotinas úteis}
+
+Algumas rotinas de uso geral úteis durante a programação.
+
+\begin{description}
+\rotina{gr\_getnextname} lê a próxima palavra {\it (token)} de um
+arquivo. As palavras são separadas por caracteres ``branco''(são
+considerados caracteres branco: espaços, tabs, nova linha, fim de
+linha).\\ 
+{\it protótipo:} {\tt void gr\_getnextname(char *str,FILE *fp);}\\
+A próxima palavra é retornada em {\tt str}.
+\end{description}
+
+\addcontentsline{toc}{section}{\indexname}
+{\small {\baselineskip=.9\baselineskip \input{manual.ind}}}
+\end{document}
+
+
+

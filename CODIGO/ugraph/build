@@ -1,0 +1,9 @@
+cd grafo
+cd myutil
+make
+cd ..
+cd ugraph
+make
+cd ..
+cd ..
+make
