@@ -1,0 +1,97 @@
+/************************/
+/*         Mosel        */
+/*                      */
+/* File  xprm_ni.h      */
+/************************/
+/* (c) Copyright Fair Isaac Corporation 2008 */
+
+#ifndef _MOSEL_NI_H
+#include "xprm_rt.h"
+#include "mosel_ni.h"
+
+typedef struct Vimactx* XPRMcontext;
+typedef struct Fdesc* XPRMfdesc;
+typedef struct Mipsolver XPRMmipsolver;
+typedef struct Matrix XPRMmatrix;
+
+typedef mm_dsoconst XPRMdsoconst;
+typedef mm_dsofct XPRMdsofct;
+typedef mm_dsotyp XPRMdsotyp;
+typedef mm_dsoserv XPRMdsoserv;
+typedef mm_dsointer XPRMdsointer;
+typedef struct Mosel_ni* XPRMnifct;
+typedef mm_iofcttab XPRMiofcttab;
+typedef mm_iodrvtab XPRMiodrvtab;
+
+#define XPRM_TOP_ST MM_TOP_ST
+#define XPRM_FREE_ST MM_FREE_ST
+#define XPRM_POP_INT MM_POP_INT
+#define XPRM_POP_REAL MM_POP_REAL
+#define XPRM_POP_STRING MM_POP_STRING
+#define XPRM_POP_REF MM_POP_REF
+#define XPRM_PUSH_INT MM_PUSH_INT
+#define XPRM_PUSH_REAL MM_PUSH_REAL
+#define XPRM_PUSH_STRING MM_PUSH_STRING
+#define XPRM_PUSH_REF MM_PUSH_REF
+#define XPRM_GETMOD MM_GETMOD
+#define XPRM_CST_INT MM_CST_INT
+#define XPRM_CST_BOOL MM_CST_BOOL
+#define XPRM_CST_REAL MM_CST_REAL
+#define XPRM_CST_STRING MM_CST_STRING
+#define XPRM_CTYPE_UNCONS MM_CTYPE_UNCONS
+#define XPRM_CTYPE_GEQ MM_CTYPE_GEQ
+#define XPRM_CTYPE_LEQ MM_CTYPE_LEQ
+#define XPRM_CTYPE_EQ MM_CTYPE_EQ
+#define XPRM_CTYPE_RNG MM_CTYPE_RNG
+#define XPRM_CTYPE_SOS1 MM_CTYPE_SOS1
+#define XPRM_CTYPE_SOS2 MM_CTYPE_SOS2
+#define XPRM_CTYPE_CONT MM_CTYPE_CONT
+#define XPRM_CTYPE_INT MM_CTYPE_INT
+#define XPRM_CTYPE_BIN MM_CTYPE_BIN
+#define XPRM_CTYPE_PINT MM_CTYPE_PINT
+#define XPRM_CTYPE_SEC MM_CTYPE_SEC
+#define XPRM_CTYPE_SINT MM_CTYPE_SINT
+#define XPRM_CTYPE_FREE MM_CTYPE_FREE
+#define XPRM_CSTAT_EMPTY MM_CSTAT_EMPTY
+#define XPRM_CSTAT_HIDN MM_CSTAT_HIDN
+#define XPRM_CSTAT_TEMP MM_CSTAT_TEMP
+#define XPRM_CSTAT_READY MM_CSTAT_READY
+#define XPRM_SHT_CTL MM_SHT_CTL
+#define XPRM_MSK_CTL MM_MSK_CTL
+#define XPRM_CHKCSTAT MM_CHKCSTAT
+#define XPRM_GETCTYPE MM_GETCTYPE
+#define XPRM_NIVERS MM_NIVERS
+#define XPRM_MKVER MM_MKVER
+#define XPRM_SRV_PARAM MM_SRV_PARAM
+#define XPRM_SRV_RESET MM_SRV_RESET
+#define XPRM_SRV_CHKVER MM_SRV_CHKVER
+#define XPRM_SRV_UNLOAD MM_SRV_UNLOAD
+#define XPRM_SRV_PARLST MM_SRV_PARLST
+#define XPRM_SRV_IMCI MM_SRV_IMCI
+#define XPRM_SRV_DEPLST MM_SRV_DEPLST
+#define XPRM_SRV_CERTIF MM_SRV_CERTIF
+#define XPRM_SRV_IODRVS MM_SRV_IODRVS
+#define XPRM_SRV_ONEXIT MM_SRV_ONEXIT
+#define XPRM_FCT_GETPAR MM_FCT_GETPAR
+#define XPRM_FCT_SETPAR MM_FCT_SETPAR
+#define XPRM_DTYP_PNCTX MM_DTYP_PNCTX
+#define XPRM_DTYP_RFCNT MM_DTYP_RFCNT
+#define XPRM_MPNAM_COL MM_MPNAM_COL
+#define XPRM_MPNAM_ROW MM_MPNAM_ROW
+#define XPRM_MPNAM_SOS MM_MPNAM_SOS
+
+#define XPRM_IOCTRL_FCTS MM_IOCTRL_FCTS
+#define XPRM_IOCTRL_DSO MM_IOCTRL_DSO
+#define XPRM_IOCTRL_NAME MM_IOCTRL_NAME
+#define XPRM_IOCTRL_OPEN MM_IOCTRL_OPEN
+#define XPRM_IOCTRL_CLOSE MM_IOCTRL_CLOSE
+#define XPRM_IOCTRL_READ MM_IOCTRL_READ
+#define XPRM_IOCTRL_WRITE MM_IOCTRL_WRITE
+#define XPRM_IOCTRL_IFROM MM_IOCTRL_IFROM
+#define XPRM_IOCTRL_ITO MM_IOCTRL_ITO
+#define XPRM_IOCTRL_INFO MM_IOCTRL_INFO
+#define XPRM_IOCTRL_ERROR MM_IOCTRL_ERROR
+#define XPRM_IOCTRL_RM MM_IOCTRL_RM
+#define XPRM_IOCTRL_MV MM_IOCTRL_MV
+
+#endif
