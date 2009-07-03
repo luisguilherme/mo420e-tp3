@@ -29,12 +29,11 @@ void Stab::getParam(int& ncol,int& nrow,char** rowtype,double** rhs,
     
 
     int pos = 0;
-    for(int i=0;i<n;i++) {
-      for(int j=i+1;j<n;j++) {
+    for(int i=0,e=0;i<n;i++) {
+      for(int j=i+1;j<n;j++,e++) {
 	/* as primeiras n linhas são referentes às arestas. 
 	   São 1 se estiverem em uma coluna correspondente a um dos vértices 
 	*/
-	int e = i*n+j;
 	(*lb)[e] = 0;
 	(*ub)[e] = 1;
 	(*obj)[e] = 0;
