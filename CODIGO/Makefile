@@ -15,10 +15,10 @@ all: $(sources) $(headers) $(objects)
 	$(CXX) $(CFLAGS) $< -c -o $@
 
 bnc: $(objects) $(headers)
-	$(CXX) $(CFLAGS) $(LDFLAGS) $(objects) -o $@
+	$(CXX) $(CFLAGS) $(objects) -o $@ $(LDFLAGS)
 
 prebnc: $(objects) $(headers)
-	$(CXX) $(CFLAGS) $(objects) $(LIBS) -lugraph -lmyutil -o $@
+	$(CXX) $(CFLAGS) $(objects) $(LIBS) -o $@ -lugraph -lmyutil
 
 .PHONY: clean
 clean: 
