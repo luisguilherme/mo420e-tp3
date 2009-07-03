@@ -7,5 +7,7 @@
 #define pb push_back
 #define sz(a) (int) (a).size()
 #define NONZERO(a) ((a) > EPSILON || (a) < -EPSILON)
+#define present(c,x) ((c).find(x) != (c).end()) 
+#define traverse(c,i) for(typeof((c).begin()) i = (c).begin(); i != (c).end(); i++) 
 
 #endif

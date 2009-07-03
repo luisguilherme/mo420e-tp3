@@ -3,7 +3,7 @@
 
 void StabInstance::loadFrom(FILE* fp) {
   char name[255];
-  int n;
+
   fscanf(fp," NAME : %[^\n]",name);
   fscanf(fp," %*s : %*[^\n]");
   fscanf(fp," %*s : %*[^\n]");

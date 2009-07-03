@@ -19,12 +19,12 @@ typedef std::pair<int,int> ii;
 typedef std::pair<ii,ii> inter;
 
 class StabInstance : public Instance {
+public:
   
+  int n;
   std::string nome;
   std::vector<point> ponto;
   std::map<ii,std::set<ii> > intersection;
-
-public:
 
   /* talvez saia daqui e vá para o stab.H */
   graphtype *cost_graph;
