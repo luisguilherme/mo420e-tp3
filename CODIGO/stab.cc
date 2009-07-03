@@ -12,7 +12,6 @@ void Stab::getParam(int& ncol,int& nrow,char** rowtype,double** rhs,
   ncol = (n*(n-1))/2 + 1;
   nmip = ncol;
 
-
   *rowtype = (char*) calloc(nrow,sizeof(char));
   *rhs = (double*) calloc(nrow,sizeof(double));
     
@@ -26,7 +25,6 @@ void Stab::getParam(int& ncol,int& nrow,char** rowtype,double** rhs,
   /* Talvez seja necessário usar menos memória :( */
   *rowidx = (int*) calloc(nrow*ncol,sizeof(int));
   *matval = (double*) calloc(nrow*ncol,sizeof(double));
-    
 
   int pos = 0;
   for(int i=0,e=0;i<n;i++) {
@@ -55,7 +53,10 @@ void Stab::getParam(int& ncol,int& nrow,char** rowtype,double** rhs,
 	  }
 	
     }
+
   }
+
+  /* variável y */
   (*colbeg)[ncol-1] = pos;
   (*miptype)[ncol-1] = 'I';
   (*mipcol)[ncol-1] = ncol - 1;
