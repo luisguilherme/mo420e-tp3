@@ -4,8 +4,8 @@ LIBS = -L$(XPRESSDIR)/lib -Lugraph/grafo/ugraph -Lugraph/grafo/myutil
 CFLAGS += -Wall -g -D_REENTRANT $(INCLUDES)
 LDFLAGS = $(LIBS) -lxprs -lm -lugraph -lmyutil
 
-headers = instance.H integer_program.H definitions.H
-objects = stab_instance.o bnc.o stab.o
+headers = instance.H integer_program.H definitions.H cutting.H
+objects = stab_instance.o bnc.o stab.o cutting.o
 sources = $(objects:.o=.cc)
 
 .PHONY: all

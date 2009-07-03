@@ -16,33 +16,18 @@
 
  
 /* includes dos arquivos .h */
+#include <cstdio>
+#include <cstring>
+#include <cstdlib>
+#include <cassert>
 
-#ifndef HGLOBAIS
- #include "globais.h" 
-#endif
+#include "integer_program.H"
+#include "cutting.H"
+#include "definitions.H"
+#include "xprs.h"
 
 /* variaveis globais */
 
-/* dados da mochila */
-int n;       /* número de itens */
-double *c;   /* custos */
-int *w;      /* pesos */
-int W;       /* capacidade */
-/* - variaveis  para  inclusao de  cortes:  qrtype,  mstart e  dmatval
- *   usadas para carga inicial do LP tambem. */
-int *mcols, *mtype, *mstart;
-char *qrtype;
-double *drhs, *dmatval; 
-/* estrutura do XPRESS contendo o problema */
-XPRSprob prob;   
-/* armazena as solucoes do LP e do ILP  */
-double *x;    
-/* contador do total de cortes por nó da arvore B&B */
-int totcuts=0;  
-/* contador do total de nós explorados B&B */
-int totnodes=0;  
-/* contador do total de lacos de separacao de cortes por nó da arvore B&B */
-int itersep=0;   
 /* valor de retorno das rotinas do XPRESS */
 int xpress_ret;   
 /* status retornado por algumas rotinas do XPRESS */
@@ -51,18 +36,28 @@ int xpress_status;
 double *xstar;   
 /* armazena o valor da solucao otima */
 double zstar;  
+/* armazena as solucoes do LP e do ILP  */
+double *x;    
+/* - diz se usara ou nao a heuristica primal */
+bool HEURISTICA_PRIMAL;
+/* - diz se usara ou nao cortes */
+bool BRANCH_AND_CUT;
+/* - nó onde encontrou a melhor solucao inteira */
+int NODE_BEST_INTEGER_SOL;
+/* estrutura do XPRESS contendo o problema */
+XPRSprob prob;   
+/* contador do total de cortes por nó da arvore B&B */
+int totcuts;  
+/* contador do total de nós explorados B&B */
+int totnodes;  
+/* contador do total de lacos de separacao de cortes por nó da arvore B&B */
+int itersep;   
 /* - profundidade maxima de um no da arvore de B&B aonde sera feita separacao */
-int MAX_NODE_DEPTH_FOR_SEP=1000000;
+int MAX_NODE_DEPTH_FOR_SEP;
 /* - valor otimo da primeira relaxacao */
 double objval_relax;
 /* - valor da relaxacao linear no final do 1o nó */
 double objval_node1;
-/* - diz se usara ou nao a heuristica primal */
-Boolean HEURISTICA_PRIMAL;
-/* - diz se usara ou nao cortes */
-Boolean BRANCH_AND_CUT;
-/* - nó onde encontrou a melhor solucao inteira */
-int NODE_BEST_INTEGER_SOL=-1;
 
 /* declaracoes das callbacks */
 int XPRS_CC Cortes(XPRSprob prob, void* data);
@@ -86,165 +81,75 @@ void showUsage() {
 	printf ("- instancia: nome do arquivo contendo a instância \n");
 }
 
-/* ============================ */
-/* Inicio do programa principal */
-/* ============================ */
-int main(int argc, char * argv[]){
+CuttingPlanes::CuttingPlanes(IntegerProgram &ip, bool hp, bool bnc) : ip(ip) {
 
-  /* variaveis auxiliares */  
-  int i,j;
-  char opcoes[2]="";
+    bool relaxed;
 
-  /* variaveis para montar o LP no solver */
-  int *mrwind, *mgcols;
-  char *qgtype;
-  double *rhs, *obj, *dlb, *dub, melhor_limitante_dual;
+    // FIXME: colocar em IntegerProgram
+    char probname[] = "stab";
 
-  char probname[] = "mochila";
+    /* inicializa valores de variaveis globais */
+    HEURISTICA_PRIMAL = hp; BRANCH_AND_CUT = bnc;
+    totcuts=0; totnodes = 0; itersep=0; zstar=XPRS_MINUSINFINITY; 
+    MAX_NODE_DEPTH_FOR_SEP = 1000000;
+    NODE_BEST_INTEGER_SOL = -1;
 
-  /* Verifica estratégia a adotar de acordo com a linha de comando */
+    ip.getParam(n, m, &qrtype, &rhs, &obj, &mstart, &mrwind,
+		&dmatval, &dlb, &dub, n, &qgtype, &mgcols, relaxed);
 
-  if ( (argc<2) || (argc>3) ) {
-      showUsage();
-      exit(-1);
-  }
+    /* incializacão do XPRESS */
+    xpress_ret=XPRSinit("");
+    if (xpress_ret) errormsg("Main: Erro de inicializacao do XPRESS.\n",__LINE__,xpress_ret);
 
-  if ( (strlen(argv[1]) != 2) ){
-      printf("Primeiro parâmetro tem tamanho menor que 2. \n");
-      showUsage();
-      exit(-1);
-  }
-  else{
-      sprintf(opcoes,"%c",argv[1][0]);
-      if ( (strcmp(opcoes,"0")) && (strcmp(opcoes,"1")) ){
-	  printf("Primeiro parâmetro dever ter apenas \"0\"s e \"1\"s !\n");
-	  showUsage();
-	  exit(-1);
-      }
-      else HEURISTICA_PRIMAL=(strcmp(opcoes,"0"));
+    /* "cria" o problema  */
+    xpress_ret=XPRScreateprob(&prob);
+    if (xpress_ret) errormsg("Main: Erro na initializacao do problema",__LINE__,xpress_ret);
 
-      sprintf(opcoes,"%c",argv[1][1]);
-      if ( (strcmp(opcoes,"0")) && (strcmp(opcoes,"1")) ){
-	  printf("Primeiro parâmetro dever ter apenas \"0\"s e \"1\"s !\n");
-	  showUsage();
-	  exit(-1);
-      }
-      else BRANCH_AND_CUT=(strcmp(opcoes,"0"));
-  }
+    /* ======================================================================== */
+    /* Atribui valores a vários parametros de controle do XPRESS                */
+    /* ======================================================================== */
 
-  if (argc>=3) MAX_NODE_DEPTH_FOR_SEP=atoi(argv[2]);
+    /* limita o tempo de execucao */
+    xpress_ret=XPRSsetintcontrol(prob,XPRS_MAXTIME,MAX_CPU_TIME);
+    if (xpress_ret) errormsg("Main: Erro ao tentar setar o XPRS_MAXTIME.\n",__LINE__,xpress_ret);
 
-  /* inicializa valores de variaveis globais */
-  totcuts=0;   itersep=0;   zstar=XPRS_MINUSINFINITY; 
-
-  /* le dados de entrada do problema da Mochila 0-1.*/
-  scanf("%d %d",&n,&W);
-  c=(double *)malloc(n*sizeof(double));
-  w=(int *)malloc(n*sizeof(int));
-  for(i=0;i<n;i++) scanf("%lf",&c[i]);
-  for(i=0;i<n;i++) scanf("%d",&w[i]);
-
-  /* aloca espaco para os arrays que serão usados pelo XPRESS na carga do problema.
-   * Ler no manual do XPRESS a documentação sobre a rotina XPRSloadglobal.  */
-
-  /* arrays com informações sobre as variáveis */
-  qgtype = malloc(n*sizeof(char));
-  obj=(double *)malloc(n*sizeof(double));
-  dlb=(double *)malloc(n*sizeof(double));
-  dub=(double *)malloc(n*sizeof(double));
-  mgcols=(int *)malloc(n*sizeof(int));
-
-  /* arrays com informações sobre as restrições (só tem uma !)*/
-  qrtype = malloc(sizeof(char));
-  rhs=(double *)malloc(sizeof(double));
-  mstart=(int *)malloc((n+1)*sizeof(int));
-  mrwind=(int *)malloc(n*sizeof(int));
-  dmatval=(double *)malloc(n*sizeof(double));
-
-  /* carga dos vetores */
-  for(i=0;i<n;i++){
-    obj[i]=c[i];   /* custos das variáveis */
-    dlb[i]=0.0;    /* limite inferior das variáveis */
-    dub[i]=1.0;    /* limite superior das variáveis */
-    mgcols[i]=i;   /* todas variáveis são globais (veja manual para explicação) */         
-    qgtype[i]='B'; /* todas variáveis são binárias */       
-
-    mrwind[i]=0;   /* todas variáveis ocorrem na primeira restrição */
-    mstart[i]=i;   /* (veja manual para explicação) */ 
-    dmatval[i]=w[i]; /* coeficiente da variável na restrição 1 */
-  }
-  rhs[0]=(double) W;
-  qrtype[0]='L'; 
-  mstart[n]=n;
-
-  /* incializacão do XPRESS */
-  xpress_ret=XPRSinit("");
-  if (xpress_ret) errormsg("Main: Erro de inicializacao do XPRESS.\n",__LINE__,xpress_ret);
-
-  /* "cria" o problema  */
-  xpress_ret=XPRScreateprob(&prob);
-  if (xpress_ret) errormsg("Main: Erro na initializacao do problema",__LINE__,xpress_ret);
-
-  /* ======================================================================== */
-  /* Atribui valores a vários parametros de controle do XPRESS                */
-  /* ======================================================================== */
-
-  /* limita o tempo de execucao */
-  xpress_ret=XPRSsetintcontrol(prob,XPRS_MAXTIME,MAX_CPU_TIME);
-  if (xpress_ret) errormsg("Main: Erro ao tentar setar o XPRS_MAXTIME.\n",__LINE__,xpress_ret);
-
-  /* aloca  espaço extra de  linhas para inserção de  cortes. CUIDADO:
-     Isto tem que ser feito ANTES (!) de carregar o problema ! */
-  xpress_ret=XPRSsetintcontrol(prob,XPRS_EXTRAROWS,MAX_NUM_CORTES+1);
-  if (xpress_ret) 
-    errormsg("Main: Erro ao tentar setar o XPRS_EXTRAROWS.\n",__LINE__,xpress_ret);
+    /* aloca  espaço extra de  linhas para inserção de  cortes. CUIDADO:
+       Isto tem que ser feito ANTES (!) de carregar o problema ! */
+    xpress_ret=XPRSsetintcontrol(prob,XPRS_EXTRAROWS,MAX_NUM_CORTES+1);
+    if (xpress_ret) 
+      errormsg("Main: Erro ao tentar setar o XPRS_EXTRAROWS.\n",__LINE__,xpress_ret);
   
-  /*  aloca espaço  extra  de  elementos não  nulos  para inserção  de
-     cortes. CUIDADO: Isto  tem que ser feito ANTES  (!) de carregar o
-     problema ! */
-  xpress_ret=XPRSsetintcontrol(prob,XPRS_EXTRAELEMS,n*n);
-  if (xpress_ret) 
-    errormsg("Main: Erro ao tentar setar o XPRS_EXTRAELEMS.",__LINE__,xpress_ret);
-  
-  /*=====================================================================================*/
-  /* RELEASE NOTE: The controls CPKEEPALLCUTS, CPMAXCUTS and CPMAXELEMS have been removed*/
-  /* limita o número máximo de cortes que poderão ser inseridos
-  xpress_ret=XPRSsetintcontrol(prob,XPRS_CPMAXCUTS,MAX_NUM_CORTES); 
-  if (xpress_ret)  
-  errormsg("Main: Erro ao tentar setar o XPRS_CPMAXCUTS.\n",__LINE__,xpress_ret);*/
-  
-  /* limita o número máximo de elementos não-nulos nos cortes que poderão ser inseridos
-  xpress_ret=XPRSsetintcontrol(prob,XPRS_CPMAXELEMS,MAX_NUM_CORTES*n); 
-  if (xpress_ret)  
-    errormsg("Main: Erro ao tentar setar o XPRS_CPMAXELEMS.",__LINE__,xpress_ret);*/ 
-  /*=====================================================================================*/
-      
-  /* carga do modelo*/
-  xpress_ret=XPRSloadglobal(prob, probname, n, 1,  qrtype, rhs, NULL, obj, mstart, NULL, 
-      mrwind, dmatval, dlb, dub, n, 0, qgtype, mgcols, NULL, NULL, NULL,  NULL, NULL);
-  if (xpress_ret) errormsg("Main: Erro na carga do modelo.",__LINE__,xpress_ret);
+    /*  aloca espaço  extra  de  elementos não  nulos  para inserção  de
+	cortes. CUIDADO: Isto  tem que ser feito ANTES  (!) de carregar o
+	problema ! */
+    xpress_ret=XPRSsetintcontrol(prob,XPRS_EXTRAELEMS,n*n);
+    if (xpress_ret) 
+      errormsg("Main: Erro ao tentar setar o XPRS_EXTRAELEMS.",__LINE__,xpress_ret);
+    
+    xpress_ret=XPRSloadglobal(prob, probname, n, 1,  qrtype, rhs, NULL, obj, mstart, NULL, 
+			      mrwind, dmatval, dlb, dub, n, 0, qgtype, mgcols, NULL, NULL, NULL,  NULL, NULL);
+    if (xpress_ret) errormsg("Main: Erro na carga do modelo.",__LINE__,xpress_ret);
 
-  /* libera memoria dos vetores usado na carga do LP */
-  free(qrtype);   free(rhs);    free(obj);      free(mstart);   free(mrwind);   free(dmatval); 
-  free(dlb);      free(dub);    free(qgtype);   free(mgcols); 
+    /* libera memoria dos vetores usado na carga do LP */
+    free(qrtype);   free(rhs);    free(obj);      free(mstart);   free(mrwind);   free(dmatval); 
+    free(dlb);      free(dub);    free(qgtype);   free(mgcols); 
+    
+    /* salva um arquivo ".lp" com o LP original */
+    xpress_ret=XPRSwriteprob(prob,"LP","l");
+    if (xpress_ret) 
+      errormsg("Main: Erro na chamada da rotina XPRSwriteprob.\n",__LINE__,xpress_ret);
+    
+    /* Desabilita o PRESOLVE: o problema da mochila é muito fácil para o XPRESS */
+    xpress_ret=XPRSsetintcontrol(prob,XPRS_PRESOLVE,0);
+    if (xpress_ret) errormsg("Main: Erro ao desabilitar o presolve.",__LINE__,xpress_ret);
+  }
+bool CuttingPlanes::solve() {
+    /* impressão para conferência */
+    if (HEURISTICA_PRIMAL) printf("*** Heurística Primal será usada\n");
 
-  /* salva um arquivo ".lp" com o LP original */
-  xpress_ret=XPRSwriteprob(prob,"LP","l");
-  if (xpress_ret) 
-     errormsg("Main: Erro na chamada da rotina XPRSwriteprob.\n",__LINE__,xpress_ret);
-
-  /* Desabilita o PRESOLVE: o problema da mochila é muito fácil para o XPRESS */
-  xpress_ret=XPRSsetintcontrol(prob,XPRS_PRESOLVE,0);
-  if (xpress_ret) errormsg("Main: Erro ao desabilitar o presolve.",__LINE__,xpress_ret);
-
-  /* impressão para conferência */
-  if (HEURISTICA_PRIMAL) printf("*** Heurística Primal será usada\n");
-
-  if (BRANCH_AND_CUT) { 
+    if (BRANCH_AND_CUT) { 
 
       printf("*** Algoritmo de branch-and-cut.\n");
-
-
       /*  aloca  espaco  para  as  estruturas que  serao  usadas  para
        * armazenar  os cortes  encontrados na separacao.   Para evitar
        * perda de tempo, estas  estruturas sao alocadas uma unica vez.
@@ -263,127 +168,128 @@ int main(int argc, char * argv[]){
       /* callback indicando que sera feita separacao de cortes em cada
          nó da arvore de B&B */
       xpress_ret=XPRSsetcbcutmgr(prob,Cortes,NULL);
+
       if (xpress_ret) 
-         errormsg("Main: Erro na chamada da rotina XPRSsetcbcutmgr.\n",__LINE__,xpress_ret);
+	errormsg("Main: Erro na chamada da rotina XPRSsetcbcutmgr.\n",__LINE__,xpress_ret);
       /*=====================================================================================*/
       /* RELEASE NOTE: The controls CPKEEPALLCUTS, CPMAXCUTS and CPMAXELEMS have been removed*/    
       /* Diz ao XPRESS que quer manter cortes no pool 
-      xpress_ret=XPRSsetintcontrol(prob,XPRS_CPKEEPALLCUTS,0); 
-      if (xpress_ret)   
+	 xpress_ret=XPRSsetintcontrol(prob,XPRS_CPKEEPALLCUTS,0); 
+	 if (xpress_ret)   
          errormsg("Main: Erro ao tentar setar o XPRS_CPKEEPALLCUTS.\n",__LINE__,xpress_ret); */ 
       /*=====================================================================================*/
-  } 
-  else { 
+    } 
+    else { 
 
       printf("*** Algoritmo de branch-and-bound puro.\n");
 
       qrtype=NULL;   mtype=NULL;   drhs=NULL;   mstart=NULL;   
       mcols=NULL;    dmatval=NULL;
+
       if (HEURISTICA_PRIMAL) {
-	  /*  callback indicando que sera feita separacao de cortes em
-              cada nó da  arvore de B&B.  Mas, neste  caso, a rotina
-              nao  faz   corte,  limitando-se  apenas   a  executar  a
-              heuristica primal. */
-	  xpress_ret=XPRSsetcbcutmgr(prob,Cortes,NULL);
-	  if (xpress_ret) 
-	      errormsg("Main: rotina XPRSsetcbcutmgr.\n",__LINE__,xpress_ret);
+	/*  callback indicando que sera feita separacao de cortes em
+	    cada nó da  arvore de B&B.  Mas, neste  caso, a rotina
+	    nao  faz   corte,  limitando-se  apenas   a  executar  a
+	    heuristica primal. */
+	xpress_ret=XPRSsetcbcutmgr(prob,Cortes,NULL);
+	if (xpress_ret) 
+	  errormsg("Main: rotina XPRSsetcbcutmgr.\n",__LINE__,xpress_ret);
       }
-  }
-
-  /* Desabilita a separacao de cortes do XPRESS. Mochila é muito fácil para o XPRESS */
-  xpress_ret=XPRSsetintcontrol(prob,XPRS_CUTSTRATEGY,0);
-  if (xpress_ret) 
-    errormsg("Main: Erro ao tentar setar o XPRS_CUTSTRATEGY.\n",__LINE__,xpress_ret);
-
-  /* callback para salvar a melhor solucao inteira encontrada */
-  xpress_ret=XPRSsetcbintsol(prob,SalvaMelhorSol,NULL);
-  if (xpress_ret) 
-    errormsg("Main: Erro na chamada da rotina XPRSsetcbintsol.\n",__LINE__,xpress_ret);
-  
-  /* aloca  espaco  para o  vetor  "x"  que  contera as  solucoes  das
-   * relaxacoes e  de "xstar" que armazenara a  melhor solucao inteira
-   * encontrada. */
-  x=(double *)malloc(n*sizeof(double));
-  xstar=(double *)malloc(n*sizeof(double));
-
-  /* resolve o problema */
-  xpress_ret=XPRSmaxim(prob,"g");
-  if (xpress_ret) errormsg("Main: Erro na chamada da rotina XPRSmaxim.\n",__LINE__,xpress_ret);
-
-  /* imprime a solucao otima ou a melhor solucao encontrada (se achou)  e o seu valor */
-  xpress_ret=XPRSgetintattrib(prob,XPRS_MIPSTATUS,&xpress_status);
-  if (xpress_ret) 
-    errormsg("Main: Erro na chamada da rotina XPRSgetintatrib.\n",__LINE__,xpress_ret);
-
-  if ( (xpress_status==XPRS_MIP_OPTIMAL)  || 
-       (xpress_status==XPRS_MIP_SOLUTION) ||
-       (zstar > XPRS_MINUSINFINITY ) ){
-
-    XPRSgetintattrib(prob,XPRS_MIPSOLNODE,&NODE_BEST_INTEGER_SOL);
-    printf("\n");
-    printf("- Valor da solucao otima =%12.6f \n",(double)(zstar));
-    printf("- Variaveis otimas: (nó=%d)\n",NODE_BEST_INTEGER_SOL);
-
-    if ( zstar == XPRS_MINUSINFINITY ) {
-      xpress_ret=XPRSgetsol(prob,xstar,NULL,NULL,NULL);
-      if (xpress_ret) 
-	errormsg("Main: Erro na chamada da rotina XPRSgetsol\n",__LINE__,xpress_ret);
     }
-    ImprimeSol(xstar);
 
-  }
-  else  printf("Main: programa terminou sem achar solucao inteira !\n");
+    /* Desabilita a separacao de cortes do XPRESS. Mochila é muito fácil para o XPRESS */
+    xpress_ret=XPRSsetintcontrol(prob,XPRS_CUTSTRATEGY,0);
+    if (xpress_ret) 
+      errormsg("Main: Erro ao tentar setar o XPRS_CUTSTRATEGY.\n",__LINE__,xpress_ret);
 
+    /* callback para salvar a melhor solucao inteira encontrada */
+    xpress_ret=XPRSsetcbintsol(prob,SalvaMelhorSol,NULL);
+    if (xpress_ret) 
+      errormsg("Main: Erro na chamada da rotina XPRSsetcbintsol.\n",__LINE__,xpress_ret);
+  
+    /* aloca  espaco  para o  vetor  "x"  que  contera as  solucoes  das
+     * relaxacoes e  de "xstar" que armazenara a  melhor solucao inteira
+     * encontrada. */
+    x=(double *)malloc(n*sizeof(double));
+    xstar=(double *)malloc(n*sizeof(double));
 
-  /* impressao de estatisticas */
-  printf("********************\n");
-  printf("Estatisticas finais:\n");
-  printf("********************\n");
-  printf(".total de cortes inseridos ........ = %d\n",totcuts);
-  printf(".valor da FO da primeira relaxação. = %.6f\n",objval_relax);
-  printf(".valor da FO no nó raiz ........... = %.6f\n",objval_node1);
+    /* resolve o problema */
+    xpress_ret=XPRSmaxim(prob,"g");
+    if (xpress_ret) errormsg("Main: Erro na chamada da rotina XPRSmaxim.\n",__LINE__,xpress_ret);
 
-  xpress_ret=XPRSgetintattrib(prob,XPRS_NODES,&totnodes);
-  if (xpress_ret) 
+    /* imprime a solucao otima ou a melhor solucao encontrada (se achou)  e o seu valor */
+    xpress_ret=XPRSgetintattrib(prob,XPRS_MIPSTATUS,&xpress_status);
+    if (xpress_ret) 
       errormsg("Main: Erro na chamada da rotina XPRSgetintatrib.\n",__LINE__,xpress_ret);
 
-  printf(".total de nós explorados .......... = %d\n",totnodes);
-  printf(".nó da melhor solucao inteira ..... = %d\n",NODE_BEST_INTEGER_SOL);
-  printf(".valor da melhor solucao inteira .. = %d\n",(int)(zstar+0.5));  
-         /* somar 0.5 evita erros de arredondamento */
+    if ((xpress_status==XPRS_MIP_OPTIMAL)  || 
+	(xpress_status==XPRS_MIP_SOLUTION) ||
+	(zstar > XPRS_MINUSINFINITY)){
 
-  /* verifica o valor do melhor_limitante_dual */
-  xpress_ret=XPRSgetdblattrib(prob,XPRS_BESTBOUND,&melhor_limitante_dual);
-  if (xpress_ret) 
+      XPRSgetintattrib(prob,XPRS_MIPSOLNODE,&NODE_BEST_INTEGER_SOL);
+      printf("\n");
+      printf("- Valor da solucao otima =%12.6f \n",(double)(zstar));
+      printf("- Variaveis otimas: (nó=%d)\n",NODE_BEST_INTEGER_SOL);
+
+      if ( zstar == XPRS_MINUSINFINITY ) {
+	xpress_ret=XPRSgetsol(prob,xstar,NULL,NULL,NULL);
+	if (xpress_ret) 
+	  errormsg("Main: Erro na chamada da rotina XPRSgetsol\n",__LINE__,xpress_ret);
+      }
+      ImprimeSol(xstar);
+
+    } else  printf("Main: programa terminou sem achar solucao inteira !\n");
+
+    /* impressao de estatisticas */
+    printf("********************\n");
+    printf("Estatisticas finais:\n");
+    printf("********************\n");
+    printf(".total de cortes inseridos ........ = %d\n",totcuts);
+    printf(".valor da FO da primeira relaxação. = %.6f\n",objval_relax);
+    printf(".valor da FO no nó raiz ........... = %.6f\n",objval_node1);
+
+    xpress_ret=XPRSgetintattrib(prob,XPRS_NODES,&totnodes);
+    if (xpress_ret) 
+      errormsg("Main: Erro na chamada da rotina XPRSgetintatrib.\n",__LINE__,xpress_ret);
+
+    printf(".total de nós explorados .......... = %d\n",totnodes);
+    printf(".nó da melhor solucao inteira ..... = %d\n",NODE_BEST_INTEGER_SOL);
+    printf(".valor da melhor solucao inteira .. = %d\n",(int)(zstar+0.5));  
+    /* somar 0.5 evita erros de arredondamento */
+
+    /* verifica o valor do melhor_limitante_dual */
+    xpress_ret=XPRSgetdblattrib(prob,XPRS_BESTBOUND,&melhor_limitante_dual);
+    if (xpress_ret) 
       errormsg("Main: Erro na chamada de XPRSgetdblattrib.\n",__LINE__,xpress_ret);
 
-  if (melhor_limitante_dual < zstar+EPSILON) melhor_limitante_dual=zstar; 
-  printf(".melhor limitante dual ............ = %.6f\n",melhor_limitante_dual);
+    if (melhor_limitante_dual < zstar+EPSILON)
+      melhor_limitante_dual=zstar; 
+    printf(".melhor limitante dual ............ = %.6f\n",melhor_limitante_dual);
 
-  /* libera a memoria usada pelo problema */
-  /*
-    xpress_ret=XPRSdestroyprob(prob);
-  if (xpress_ret) 
-    errormsg("Main: Erro na liberacao da memoria usada pelo problema.\n",__LINE__,xpress_ret);
-  */
+    /* libera a memoria usada pelo problema */
+    /*
+      xpress_ret=XPRSdestroyprob(prob);
+      if (xpress_ret) 
+      errormsg("Main: Erro na liberacao da memoria usada pelo problema.\n",__LINE__,xpress_ret);
+    */
 
-  /* libera toda memoria usada no programa */
-  if (qrtype) free(qrtype);
-  if (mtype) free(mtype);
-  if (drhs) free(drhs);
-  if (mstart) free(mstart);
-  if (mcols) free(mcols);
-  if (dmatval) free(dmatval);
-  if (x) free(x);
-  if (xstar) free(xstar);
+    /* libera toda memoria usada no programa */
+    free(qrtype);
+    free(mtype);
+    free(drhs);
+    free(mstart);
+    free(mcols);
+    free(dmatval);
+    free(x);
+    free(xstar);
 
-  xpress_ret=XPRSfree();
-  if (xpress_ret)
-    errormsg("Main: Erro na liberacao de memoria final.\n",__LINE__,xpress_ret);
-  printf("========================================\n");
+    xpress_ret=XPRSfree();
+    if (xpress_ret)
+      errormsg("Main: Erro na liberacao de memoria final.\n",__LINE__,xpress_ret);
+    printf("========================================\n");
 
-  return 0;
-}
+    return true;
+  }
 
 /* =====================================================================
  * Rotina (callback) para salvar a  melhor solucao.  Roda para todo nó
@@ -394,7 +300,7 @@ void XPRS_CC SalvaMelhorSol(XPRSprob prob, void *my_object)
 {
    int i, cols, peso_aux=0, node;
    double objval;
-   Boolean viavel;
+   bool viavel;
 
    /* pega o numero do nó corrente */
    xpress_ret=XPRSgetintattrib(prob,XPRS_NODES,&node);
@@ -414,8 +320,8 @@ void XPRS_CC SalvaMelhorSol(XPRSprob prob, void *my_object)
      errormsg("SalvaMelhorSol: Erro na chamada da rotina XPRSgetsol\n",__LINE__,xpress_ret);
 
    /* testa se a solução é viável */
-   for(i=0;i<cols;i++) peso_aux += x[i]*w[i];
-   viavel=(peso_aux <= W + EPSILON);
+   // for(i=0;i<cols;i++) peso_aux += x[i]*w[i];
+   // viavel=(peso_aux <= W + EPSILON);
 
    /*
    printf("\n..Encontrada uma solução inteira (nó=%d): valor=%f, peso=%d,",
@@ -455,162 +361,162 @@ void XPRS_CC SalvaMelhorSol(XPRSprob prob, void *my_object)
 \**********************************************************************************/
 int XPRS_CC Cortes(XPRSprob prob, void* data)
 {
-    int encontrou, i, irhs, k, node, node_depth, solfile, ret;
-    int nLPStatus, nIntInf;
+    // int encontrou, i, irhs, k, node, node_depth, solfile, ret;
+    // int nLPStatus, nIntInf;
 
-    /*  variaveis para a separacao das cover inequalities */
-    int *peso, capacidade, nitem, *sol;
-    double *custo, val, lpobjval, ajuste_val;
+    // /*  variaveis para a separacao das cover inequalities */
+    // int *peso, capacidade, *sol;
+    // double *custo, val, lpobjval, ajuste_val;
 
 
-    /* se for B&B puro e não usar Heurística Primal, não faz nada */
-    if ( (!BRANCH_AND_CUT) && (!HEURISTICA_PRIMAL)) return 0;
+    // /* se for B&B puro e não usar Heurística Primal, não faz nada */
+    // if ( (!BRANCH_AND_CUT) && (!HEURISTICA_PRIMAL)) return 0;
 
-    /* Recupera a  status do LP e o  número de inviabilidades inteiras
-     * Procura  cortes e executa heurística primal  (quando tiver sido
-     *  solicitado) apenas  se o  LP  for ótimo  e a  solução não  for
-     * inteira. */
-    XPRSgetintattrib(prob,XPRS_LPSTATUS,&nLPStatus);
-    XPRSgetintattrib(prob,XPRS_MIPINFEAS,&nIntInf);
-    if (!(nLPStatus == 1 && nIntInf>0)) return 0;
+    // /* Recupera a  status do LP e o  número de inviabilidades inteiras
+    //  * Procura  cortes e executa heurística primal  (quando tiver sido
+    //  *  solicitado) apenas  se o  LP  for ótimo  e a  solução não  for
+    //  * inteira. */
+    // XPRSgetintattrib(prob,XPRS_LPSTATUS,&nLPStatus);
+    // XPRSgetintattrib(prob,XPRS_MIPINFEAS,&nIntInf);
+    // if (!(nLPStatus == 1 && nIntInf>0)) return 0;
     
-    /* Muda  o parâmetro  SOLUTIONFILE para pegar  a solução do  LP da
-        memória. LEIA O MANUAL PARA ENTENDER este trecho */
-    XPRSgetintcontrol(prob,XPRS_SOLUTIONFILE,&solfile);
-    XPRSsetintcontrol(prob,XPRS_SOLUTIONFILE,0);
-    /* Pega a solução do LP. */
-    XPRSgetsol(prob,x,NULL,NULL,NULL);
-    /* Restaura de volta o valor do SOLUTIONFILE */
-    XPRSsetintcontrol(prob,XPRS_SOLUTIONFILE,solfile);
+    // /* Muda  o parâmetro  SOLUTIONFILE para pegar  a solução do  LP da
+    //     memória. LEIA O MANUAL PARA ENTENDER este trecho */
+    // XPRSgetintcontrol(prob,XPRS_SOLUTIONFILE,&solfile);
+    // XPRSsetintcontrol(prob,XPRS_SOLUTIONFILE,0);
+    // /* Pega a solução do LP. */
+    // XPRSgetsol(prob,x,NULL,NULL,NULL);
+    // /* Restaura de volta o valor do SOLUTIONFILE */
+    // XPRSsetintcontrol(prob,XPRS_SOLUTIONFILE,solfile);
 
-    /* verifica o número do nó em que se encontra */
-    XPRSgetintattrib(prob,XPRS_NODES,&node);
+    // /* verifica o número do nó em que se encontra */
+    // XPRSgetintattrib(prob,XPRS_NODES,&node);
 
-    /* Imprime cabeçalho do nó */
-    printf("\n=========\n");
-    printf("Nó %d\n",node);
-    printf("\n=========\n");
-    printf("Laço de separação: %d\n",itersep);
+    // /* Imprime cabeçalho do nó */
+    // printf("\n=========\n");
+    // printf("Nó %d\n",node);
+    // printf("\n=========\n");
+    // printf("Laço de separação: %d\n",itersep);
  
-    /* executa a heurística primal se for o caso */
-    if (HEURISTICA_PRIMAL) HeuristicaPrimal(node);
+    // /* executa a heurística primal se for o caso */
+    // if (HEURISTICA_PRIMAL) HeuristicaPrimal(node);
 
-    /* pega o valor otimo do LP ... */
-    XPRSgetdblattrib(prob, XPRS_LPOBJVAL,&lpobjval);
+    // /* pega o valor otimo do LP ... */
+    // XPRSgetdblattrib(prob, XPRS_LPOBJVAL,&lpobjval);
 
-    /* Imprime dados sobre o nó */
-    printf(".Valor ótimo do LP: %12.6f\n",lpobjval);
-    printf(".Solução ótima do LP:\n");
-    ImprimeSol(x);
-    printf(".Rotina de separação\n");
+    // /* Imprime dados sobre o nó */
+    // printf(".Valor ótimo do LP: %12.6f\n",lpobjval);
+    // printf(".Solução ótima do LP:\n");
+    // ImprimeSol(x);
+    // printf(".Rotina de separação\n");
 
-    /* guarda o valor da função objetivo no primeiro nó */
-    if (node==1) objval_node1=lpobjval;
+    // /* guarda o valor da função objetivo no primeiro nó */
+    // if (node==1) objval_node1=lpobjval;
 
-        /* guarda o valor da função objetivo da primeira relaxação */
-    if ((node==1) && (!itersep)) objval_relax=lpobjval;
+    //     /* guarda o valor da função objetivo da primeira relaxação */
+    // if ((node==1) && (!itersep)) objval_relax=lpobjval;
 
-    /* sai fora se for branch and bound puro */
-    if (!BRANCH_AND_CUT) return 0;
+    // /* sai fora se for branch and bound puro */
+    // if (!BRANCH_AND_CUT) return 0;
 
-    /*  sai  fora se  a  profundidade do  nó  corrente  for maior  que
-     * MAX_NODE_DEPTH_FOR_SEP. */
-    xpress_ret=XPRSgetintattrib(prob,XPRS_NODEDEPTH,&node_depth);
-    if (xpress_ret) 
-       errormsg("Cortes: erro na chamada da rotina XPRSgetintattrib.\n",__LINE__,xpress_ret);
-    if (node_depth > MAX_NODE_DEPTH_FOR_SEP) return 0;
+    // /*  sai  fora se  a  profundidade do  nó  corrente  for maior  que
+    //  * MAX_NODE_DEPTH_FOR_SEP. */
+    // xpress_ret=XPRSgetintattrib(prob,XPRS_NODEDEPTH,&node_depth);
+    // if (xpress_ret) 
+    //    errormsg("Cortes: erro na chamada da rotina XPRSgetintattrib.\n",__LINE__,xpress_ret);
+    // if (node_depth > MAX_NODE_DEPTH_FOR_SEP) return 0;
 
-    /* variável indicando se achou desigualdade violada ou não */
-    encontrou=0; 
+    // /* variável indicando se achou desigualdade violada ou não */
+    // encontrou=0; 
     
-    /* carga dos parametros para a rotina de separacao da Cover Ineq */
+    // /* carga dos parametros para a rotina de separacao da Cover Ineq */
     
-    /* ATENCAO:  A rotina Mochila nao  usa a posicao  zero dos vetores
-       custo, peso  e sol,  portanto para carregar  o problema  e para
-       pegar a solucao eh preciso acertar os indices */
+    // /* ATENCAO:  A rotina Mochila nao  usa a posicao  zero dos vetores
+    //    custo, peso  e sol,  portanto para carregar  o problema  e para
+    //    pegar a solucao eh preciso acertar os indices */
 
-    peso=(int *)malloc(sizeof(int)*(n+1)); /* +1 !! */
-    assert(peso);
-    capacidade=0;
+    // peso=(int *)malloc(sizeof(int)*(n+1)); /* +1 !! */
+    // assert(peso);
+    // capacidade=0;
 
-    for(i=0;i<n;i++){
-      peso[i+1]=w[i]; /* +1 !!! */
-      capacidade=capacidade+peso[i+1]; /* +1 !! */
-    }
-    capacidade=capacidade-1-W;
+    // for(i=0;i<n;i++){
+    //   peso[i+1]=w[i]; /* +1 !!! */
+    //   capacidade=capacidade+peso[i+1]; /* +1 !! */
+    // }
+    // capacidade=capacidade-1-W;
     
-    /* calcula custos para o problema de separação (mochila) */
-    ajuste_val=0.0; /* ajuste para o custo do pbm da separação */
-    custo=(double *)malloc(sizeof(double)*(n+1));  /* +1 !!! */
-    assert(custo);
-    for(i=0;i<n;i++) {
-      custo[i+1]=1.0-x[i]; 
-      ajuste_val += custo[i+1];
-    }
+    // /* calcula custos para o problema de separação (mochila) */
+    // ajuste_val=0.0; /* ajuste para o custo do pbm da separação */
+    // custo=(double *)malloc(sizeof(double)*(n+1));  /* +1 !!! */
+    // assert(custo);
+    // for(i=0;i<n;i++) {
+    //   custo[i+1]=1.0-x[i]; 
+    //   ajuste_val += custo[i+1];
+    // }
     
-    /* aloca espaco para o vetor solucao da rotina Mochila */
-    sol=(int *)malloc(sizeof(int)*(n+1)); /* +1 !!! */
-    assert(sol);
+    // /* aloca espaco para o vetor solucao da rotina Mochila */
+    // sol=(int *)malloc(sizeof(int)*(n+1)); /* +1 !!! */
+    // assert(sol);
 
-    /* resolve a mochila usando Programação Dinâmica */
-    Mochila(custo,peso,capacidade,n,sol,&val);
+    // /* resolve a mochila usando Programação Dinâmica */
+    // Mochila(custo,peso,capacidade,n,sol,&val);
 
-    /* calculo do RHS da desigualdade de cobertura */
-    irhs=0;
-    for(i=1;i<=n;i++)
-      if (sol[i]==0) irhs++;
+    // /* calculo do RHS da desigualdade de cobertura */
+    // irhs=0;
+    // for(i=1;i<=n;i++)
+    //   if (sol[i]==0) irhs++;
     
-    /* verifica se a desigualdade estah violada */
-    if (ajuste_val - val < 1.0-EPSILON) {
-      encontrou=1;
+    // /* verifica se a desigualdade estah violada */
+    // if (ajuste_val - val < 1.0-EPSILON) {
+    //   encontrou=1;
       
-      /* prepara a insercao do corte */
-      mtype[0]=1;
-      qrtype[0]='L';
-      drhs[0]=(double)irhs - 1.0;
-      mstart[0]=0; mstart[1]=irhs;
-      k=0;
-      for(i=1;i<=n;i++)
-	if (!sol[i]) {
-	  mcols[k]=i-1;   dmatval[k]=1.0;   k++;
-	}
-      assert(k==irhs);
+    //   /* prepara a insercao do corte */
+    //   mtype[0]=1;
+    //   qrtype[0]='L';
+    //   drhs[0]=(double)irhs - 1.0;
+    //   mstart[0]=0; mstart[1]=irhs;
+    //   k=0;
+    //   for(i=1;i<=n;i++)
+    // 	if (!sol[i]) {
+    // 	  mcols[k]=i-1;   dmatval[k]=1.0;   k++;
+    // 	}
+    //   assert(k==irhs);
 
-      /* Impressão do corte */
-      printf("..corte encontrado: (viol=%12.6f)\n\n   ",1.0-ajuste_val+val);
-      for(i=0;i<irhs;i++){
-	printf("x[%d] ",mcols[i]);
-	if (i==irhs-1) printf("<= %d\n\n",irhs-1);
-	else printf("+ ");
-      }
+    //   /* Impressão do corte */
+    //   printf("..corte encontrado: (viol=%12.6f)\n\n   ",1.0-ajuste_val+val);
+    //   for(i=0;i<irhs;i++){
+    // 	printf("x[%d] ",mcols[i]);
+    // 	if (i==irhs-1) printf("<= %d\n\n",irhs-1);
+    // 	else printf("+ ");
+    //   }
 
-      /* adiciona o corte usando rotina XPRSaddcuts */
-      xpress_ret=XPRSaddcuts(prob, 1, mtype, qrtype, drhs, mstart, mcols, dmatval);
-      totcuts++;
-      if (xpress_ret) 
-	errormsg("Cortes: erro na chamada da rotina XPRSgetintattrib.\n",__LINE__,xpress_ret);
+    //   /* adiciona o corte usando rotina XPRSaddcuts */
+    //   xpress_ret=XPRSaddcuts(prob, 1, mtype, qrtype, drhs, mstart, mcols, dmatval);
+    //   totcuts++;
+    //   if (xpress_ret) 
+    // 	errormsg("Cortes: erro na chamada da rotina XPRSgetintattrib.\n",__LINE__,xpress_ret);
       
-    }
-    else printf("..corte não encontrado\n");
+    // }
+    // else printf("..corte não encontrado\n");
     
-    assert(peso && sol && custo);
-    free(peso);      free(sol);         free(custo); 
+    // assert(peso && sol && custo);
+    // free(peso);      free(sol);         free(custo); 
 
-    printf("..Fim da rotina de cortes\n");
+    // printf("..Fim da rotina de cortes\n");
 
-    /* salva um arquivo MPS com o LP original */
-    xpress_ret=XPRSwriteprob(prob,"LPcuts","l");
-    if (xpress_ret) 
-      errormsg("Cortes: rotina XPRSwriteprob.\n",__LINE__,xpress_ret);
+    // /* salva um arquivo MPS com o LP original */
+    // xpress_ret=XPRSwriteprob(prob,"LPcuts","l");
+    // if (xpress_ret) 
+    //   errormsg("Cortes: rotina XPRSwriteprob.\n",__LINE__,xpress_ret);
 
 
-    if ((encontrou) && (itersep < MAX_ITER_SEP)) 
-      { itersep++; ret=1; /* continua buscando cortes neste nó */ }
-    else
-      { itersep=0; ret=0; /* vai parar de buscar cortes neste nó */}
+    // if ((encontrou) && (itersep < MAX_ITER_SEP)) 
+    //   { itersep++; ret=1; /* continua buscando cortes neste nó */ }
+    // else
+    //   { itersep=0; ret=0; /* vai parar de buscar cortes neste nó */}
 
-    return ret;
-    
+    // return ret;
+  return 0;
 }
 
 /**********************************************************************************\
@@ -717,75 +623,74 @@ int ComparaRegAux(const void *a, const void *b) {
 }
 
 void HeuristicaPrimal(int node){
+  // /* variáveis locais */
+  // RegAux *xh;
+  // double custo;
+  // int i, j, Wresidual;
 
-  /* variáveis locais */
-  RegAux *xh;
-  double custo;
-  int i, j, Wresidual;
+  // xh=(RegAux *)malloc(n*sizeof(RegAux));
+  // for(i=0;i<n;i++){
+  //   xh[i].valor=x[i];
+  //   xh[i].indice=i;
+  // }
 
-  xh=(RegAux *)malloc(n*sizeof(RegAux));
-  for(i=0;i<n;i++){
-    xh[i].valor=x[i];
-    xh[i].indice=i;
-  }
+  // qsort(xh,n,sizeof(RegAux),&ComparaRegAux);
 
-  qsort(xh,n,sizeof(RegAux),&ComparaRegAux);
+  // /* calcula custo e  compara com a melhor solucao  corrente. Se for
+  //  * melhor,  informa o  XPRESS sobre  o  novo incumbent  e salva  a
+  //  * solucao. */
+  // custo=0.0;
+  // Wresidual=W;
+  // for(i=0;(i<n) && (Wresidual > w[xh[i].indice]);i++){
+  //   Wresidual -= w[xh[i].indice];
+  //   custo += c[xh[i].indice];
+  // }
+  // /* Nota: ao final deste laço "i-1"  será o maior índice (em xh !) de
+  //    um item que cabe na mochila. */
 
-  /* calcula custo e  compara com a melhor solucao  corrente. Se for
-   * melhor,  informa o  XPRESS sobre  o  novo incumbent  e salva  a
-   * solucao. */
-  custo=0.0;
-  Wresidual=W;
-  for(i=0;(i<n) && (Wresidual > w[xh[i].indice]);i++){
-    Wresidual -= w[xh[i].indice];
-    custo += c[xh[i].indice];
-  }
-  /* Nota: ao final deste laço "i-1"  será o maior índice (em xh !) de
-     um item que cabe na mochila. */
+  // /* Impressão da solução heurística encontrada */
+  // printf("..Solução Primal encontrada:\n");
+  // for(j=0;j<i;j++)
+  //   printf("item %3d, peso %6d, custo %12.6f\n",
+  // 	   xh[j].indice,w[xh[j].indice],c[xh[j].indice]);
+  // printf("               %6d        %12.6f\n",
+  // 	 W-Wresidual,custo);
 
-  /* Impressão da solução heurística encontrada */
-  printf("..Solução Primal encontrada:\n");
-  for(j=0;j<i;j++)
-    printf("item %3d, peso %6d, custo %12.6f\n",
-	   xh[j].indice,w[xh[j].indice],c[xh[j].indice]);
-  printf("               %6d        %12.6f\n",
-	 W-Wresidual,custo);
+  // /* verifica se atualizará o incumbent */
+  // if (custo > zstar) {
 
-  /* verifica se atualizará o incumbent */
-  if (custo > zstar) {
+  //   printf("..Heurística Primal melhorou a solução\n");
 
-    printf("..Heurística Primal melhorou a solução\n");
-
-    for(j=0;j<i;j++) xstar[xh[i].indice]=1.0;
-    for(j=i;j<n;j++) xstar[xh[i].indice]=0.0;
-    zstar=custo;
+  //   for(j=0;j<i;j++) xstar[xh[i].indice]=1.0;
+  //   for(j=i;j<n;j++) xstar[xh[i].indice]=0.0;
+  //   zstar=custo;
     
-    /* atualiza numero do nó onde encontrou a melhor solucao */
-    NODE_BEST_INTEGER_SOL=node;
+  //   /* atualiza numero do nó onde encontrou a melhor solucao */
+  //   NODE_BEST_INTEGER_SOL=node;
     
-    /* informa xpress sobre novo incumbent */
-    xpress_ret=XPRSsetdblcontrol(prob,XPRS_MIPABSCUTOFF,custo+1.0-EPSILON);
-    if (xpress_ret) 
-      errormsg("Heuristica Primal: Erro \n",__LINE__,xpress_ret);
-  }
-  else printf("..Heurística Primal não melhorou a solução\n");
+  //   /* informa xpress sobre novo incumbent */
+  //   xpress_ret=XPRSsetdblcontrol(prob,XPRS_MIPABSCUTOFF,custo+1.0-EPSILON);
+  //   if (xpress_ret) 
+  //     errormsg("Heuristica Primal: Erro \n",__LINE__,xpress_ret);
+  // }
+  // else printf("..Heurística Primal não melhorou a solução\n");
   
-  free(xh);
+  // free(xh);
 
-  return;
+  // return;
 }
 
-/**********************************************************************************\
+/*********************************************************************************\
 *  Rotina  que imprime uma solução  heurística para  mochila binaria
 *  dada a solução e uma relaxação linear.
 *
 *  Autor: Cid Carvalho de Souza
 *  Data: 10/2003
-/*********************************************************************************/
+\*********************************************************************************/
 void ImprimeSol(double *a){
-  int i;
-  for(i=0;i<n;i++) if (a[i] > EPSILON)
-    printf("x[%3d]=%12.6f (w[%3d]=%6d, c[%3d]=%12.6f)\n",i,a[i],i,w[i],i,c[i]);
+  // int i;
+  // for(i=0;i<n;i++) if (a[i] > EPSILON)
+  //   printf("x[%3d]=%12.6f (w[%3d]=%6d, c[%3d]=%12.6f)\n",i,a[i],i,w[i],i,c[i]);
 }
 
 /**********************************************************************************\
