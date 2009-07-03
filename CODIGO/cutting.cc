@@ -214,8 +214,8 @@ bool CuttingPlanes::solve() {
     xstar=(double *)malloc(n*sizeof(double));
 
     /* resolve o problema */
-    xpress_ret=XPRSmaxim(prob,"g");
-    if (xpress_ret) errormsg("Main: Erro na chamada da rotina XPRSmaxim.\n",__LINE__,xpress_ret);
+    xpress_ret=XPRSminim(prob,"g");
+    if (xpress_ret) errormsg("Main: Erro na chamada da rotina XPRSminim.\n",__LINE__,xpress_ret);
 
     /* imprime a solucao otima ou a melhor solucao encontrada (se achou)  e o seu valor */
     xpress_ret=XPRSgetintattrib(prob,XPRS_MIPSTATUS,&xpress_status);
