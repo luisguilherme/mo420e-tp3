@@ -47,11 +47,11 @@ void Stab::getParam(int& ncol,int& nrow,char** rowtype,double** rhs,
       (*rowidx)[pos++] = j;
 
       /* depois precalcular em interM se não for memória absurda */
-      for(int ni=0;ni<n;ni++)
-	for(int nj=ni+1;nj<n;nj++) 
+      for(int ni=0,ri=n;ni<n;ni++)
+	for(int nj=ni+1;nj<n;nj++,ri++) 
 	  if ( present(instance.intersection[ii(ni,nj)],ii(i,j)) ) {
 	    (*matval)[pos] = 1;
-	    (*rowidx)[pos++] = n + ni*n + nj;
+	    (*rowidx)[pos++] = ri;
 	  }
 	
     }
