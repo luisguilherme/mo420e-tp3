@@ -126,7 +126,7 @@ CuttingPlanes::CuttingPlanes(IntegerProgram &ip, bool hp, bool bnc) : ip(ip) {
     if (xpress_ret) 
       errormsg("Main: Erro ao tentar setar o XPRS_EXTRAELEMS.",__LINE__,xpress_ret);
     
-    xpress_ret=XPRSloadglobal(prob, probname, n, 1,  qrtype, rhs, NULL, obj, mstart, NULL, 
+    xpress_ret=XPRSloadglobal(prob, probname, n, m,  qrtype, rhs, NULL, obj, mstart, NULL, 
 			      mrwind, dmatval, dlb, dub, n, 0, qgtype, mgcols, NULL, NULL, NULL,  NULL, NULL);
     if (xpress_ret) errormsg("Main: Erro na carga do modelo.",__LINE__,xpress_ret);
 

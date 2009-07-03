@@ -3,10 +3,10 @@
 
 void StabInstance::loadFrom(FILE* fp) {
   char name[255];
-  fscanf(fp," NAME : %[^\n]",name);
-  fscanf(fp," %*s : %*[^\n]");
-  fscanf(fp," %*s : %*[^\n]");
-  fscanf(fp," DIMENSION : %d",&n);
+  fscanf(fp," NAME: %[^\n]",name);
+  fscanf(fp," %*s %*[^\n]");
+  fscanf(fp," %*s %*[^\n]");
+  fscanf(fp," DIMENSION: %d",&n);
   fscanf(fp," EDGE_WEIGHT_TYPE : EUC_2D");
   fscanf(fp," NODE_COORD_SECTION");
   nome = std::string(name);
@@ -17,7 +17,7 @@ void StabInstance::loadFrom(FILE* fp) {
     assert( i == ind - 1 );
     ponto.pb(std::make_pair(x,y));
   }
-  fscanf(fp," INTERSECTIONS_SECTION");
+  fscanf(fp," INSTERSECTIONS_SECTION");
   for(int i=0;i<n;i++) {
     for(int j=i+1;j<n;j++) {
       int pi, pj, k;
