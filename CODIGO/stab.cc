@@ -105,6 +105,68 @@ double Stab::heurPrimal(std::vector<double>& in, std::vector<double>& out) {
   return(y);
 }
 
+bool Stab::heurCuts(std::vector<double>& xsol, int& ncuts, int** mtype, char** qrtype, double** drhs, int** mstart, int** mcols, double** dmatval) {
+  /* Cria corte simples que viola restrição (6):
+     Para cada aresta de valor maior que 0.5 e menor que 1.0:
+       Cria um S composto de i e j. 
+       Cria corte somando o x de todas as arestas saindo de i e de j diferentes de ij sendo maior que 1.
+  */
+  
+  int dim = sz(xsol);
+  ncuts = 0;
+  int nelem = 0;
+  std::vector<std::vector<double> > cuts;
+  
+  for(int i=0,e=0;i<n;i++) {
+    for(int j=i+1;j<n;j++,e++) {
+      if (xsol[e] > 5 + EPSILON  && xsol[e] < 1 - EPSILON) {
+	cuts.pb(std::vector<double>(dim,0));
+	ncuts++;
+	for(int ni=0,ne=0;ni<n;ni++) 
+	  for(int nj=ni+1;nj<n;nj++,ne++) 
+	    /* Se é uma aresta saindo de i ou saindo de j, mas não é i -- j, 
+	       ela faz parte do corte */
+	    if ((ni != i || nj != j) &&
+		(ni == i || ni == j || nj == i || nj == j)) {
+	      cuts[ncuts-1][ne] = 1.0;
+	      nelem++;
+	    } // end if
+
+      } //end i
+    } // end j
+  }
+  if (ncuts == 0) return false;
+  
+  *mtype = (int*) calloc(ncuts,sizeof(int));
+  *qrtype = (char*) calloc(ncuts,sizeof(char));
+  *drhs = (double*) calloc(ncuts,sizeof(double));
+
+  *mstart = (int*) calloc(ncuts+1,sizeof(int));  
+
+  *dmatval = (double*) calloc(nelem,sizeof(double));
+  *mcols = (int*) calloc(nelem,sizeof(int));
+
+  int nc = 0;
+  for(int cut=0;cut<ncuts;cut++) {
+    (*mstart)[cut] = nc;
+    
+    (*mtype)[cut] = 2; //Corte heurístico
+    (*qrtype)[cut] = 'G';
+    (*drhs)[cut] = 1;
+    
+    for(int col=0;col<dim;col++) {
+      if (cuts[cut][col] > 1 - EPSILON) {
+	(*dmatval)[nc] = 1;
+	(*mcols)[nc++] = col;
+      }
+    }
+  }
+  (*mstart)[ncuts] = nc;
+
+  return true;
+}
+
+
 inline bool Stab::intersect(ii a, ii b) {
   return ( present(instance.intersection[a],b) );
 }

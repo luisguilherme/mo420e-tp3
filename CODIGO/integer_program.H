@@ -16,7 +16,11 @@ public:
   // virtual std::vector<double>& getcost() { return cost; }
   virtual void getParam(int&,int&,char**,double**,double**,int**,int**,
 			double**,double**,double**,int&,char**,int**,bool&) { }
-  virtual void addcut() {} //depois fazer assinatura
+  
+  /* retornam se conseguiram encontrar cortes */
+  virtual bool heurCuts(std::vector<double>& xsol,int& ncuts, int** mtype, char** qrtype, double** drhs, int** mstart, int** mcols, double** dmatval);
+
+  virtual bool exactCuts(std::vector<double>& xsol,int& ncuts, int** mtype, char** qrtype, double** drhs, int** mstart, int** mcols, double** dmatval);
   
   virtual double heurPrimal(std::vector<double>& in, std::vector<double>& out) { return 0.0; }
 };

@@ -1,6 +1,7 @@
 #include "integer_program.H"
 #include "stab_instance.H"
 
+
 class Stab : public IntegerProgram {
   int n;
   std::vector<std::vector<bool> > interM;
@@ -14,4 +15,5 @@ public:
                 double** matval,double** lb,double** ub,
                 int& nmip,char** miptype,int** mipcol,bool& relaxed);
   virtual double heurPrimal(std::vector<double>& in, std::vector<double>& out);
+  virtual bool heurCuts(std::vector<double>& xsol, int& ncuts, int** mtype, char** qrtype, double** drhs, int** mstart, int** mcols, double** dmatval);
 };
