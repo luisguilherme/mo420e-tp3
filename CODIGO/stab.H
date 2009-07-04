@@ -5,11 +5,13 @@ class Stab : public IntegerProgram {
   int n;
   std::vector<std::vector<bool> > interM;
   StabInstance instance;
+  bool intersect(ii a, ii b);
 public:
+  
   Stab(StabInstance& instance);
   void getParam(int& ncol,int& nrow,char** rowtype,double** rhs,
                 double** obj,int** colbeg, int** rowidx,
                 double** matval,double** lb,double** ub,
                 int& nmip,char** miptype,int** mipcol,bool& relaxed);
-
+  virtual double heurPrimal(std::vector<double>& in, std::vector<double>& out);
 };

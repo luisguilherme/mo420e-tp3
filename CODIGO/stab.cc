@@ -2,6 +2,8 @@
 #include "stab_instance.H"
 #include "stab.H"
 
+
+
 void Stab::getParam(int& ncol,int& nrow,char** rowtype,double** rhs,
 		    double** obj,int** colbeg, int** rowidx,
 		    double** matval,double** lb,double** ub,
@@ -47,7 +49,7 @@ void Stab::getParam(int& ncol,int& nrow,char** rowtype,double** rhs,
       /* depois precalcular em interM se não for memória absurda */
       for(int ni=0,ri=n;ni<n;ni++)
 	for(int nj=ni+1;nj<n;nj++,ri++) 
-	  if ( present(instance.intersection[ii(ni,nj)],ii(i,j)) ) {
+	  if ( intersect(ii(ni,nj),ii(i,j)) ) {
 	    (*matval)[pos] = 1;
 	    (*rowidx)[pos++] = ri;
 	  }
@@ -78,7 +80,34 @@ void Stab::getParam(int& ncol,int& nrow,char** rowtype,double** rhs,
     
   (*colbeg)[ncol] = pos;
 }
+double Stab::heurPrimal(std::vector<double>& in, std::vector<double>& out) {
+  int m = (n*(n-1))/2;
+  out = std::vector<double>(m+1,0);
+  std::vector<bool> paired(n,false);
+  double y = 0;
 
+  //for all vertices, pair it with the highest value
+  for(int i=0,e=0;i<n;i++) {
+    int maxp = -1;
+    int pairp, edgep;
+    if (paired[i]) continue; //evita computação inútil
+    for(int j=i+1;j<n;j++,e++) {
+      if (!paired[j] && maxp < in[e]) {
+	maxp = in[e];
+	pairp = j; edgep = e;
+      }
+    }
+    paired[i] = paired[pairp] = true;
+    out[edgep] = 1;
+    y = (double) std::max((int)(y+EPSILON),instance.nintersections[edgep]);
+  }
+  out[m] = y;
+  return(y);
+}
+
+inline bool Stab::intersect(ii a, ii b) {
+  return ( present(instance.intersection[a],b) );
+}
 
 Stab::Stab(StabInstance& instance) {
   this->instance = instance;

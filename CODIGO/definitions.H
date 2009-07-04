@@ -14,4 +14,6 @@
 #define present(c,x) ((c).find(x) != (c).end()) 
 #define traverse(c,i) for(typeof((c).begin()) i = (c).begin(); i != (c).end(); i++) 
 
+#include <algorithm>
+
 #endif

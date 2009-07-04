@@ -25,7 +25,7 @@ public:
   std::string nome;
   std::vector<point> ponto;
   std::map<ii,std::set<ii> > intersection;
-
+  std::vector<int> nintersections;
   /* talvez saia daqui e vá para o stab.H */
   graphtype *cost_graph;
 

@@ -17,13 +17,15 @@ void StabInstance::loadFrom(FILE* fp) {
     assert( i == ind - 1 );
     ponto.pb(std::make_pair(x,y));
   }
+  nintersections = std::vector<int>((n*(n-1))/2);
   fscanf(fp," %*[^\n]");
-  for(int i=0;i<n;i++) {
-    for(int j=i+1;j<n;j++) {
+  for(int i=0,e=0;i<n;i++) {
+    for(int j=i+1;j<n;j++,e++) {
       int pi, pj, k;
       ii pt;
       fscanf(fp," %d %d %d", &pi, &pj, &k);
       assert(pi == i+1 && pj == j+1);
+      nintersections[e] = k;
       pt = ii(i,j);
       for(int r=0;r<k;r++) {
 	fscanf(fp," %d %d",&pi, &pj);
@@ -32,6 +34,7 @@ void StabInstance::loadFrom(FILE* fp) {
     }
   }
   fscanf(fp," EOF");
+  
   cost_graph = gr_creategraph(n,(n*(n-1))/2);
 
 }
