@@ -65,13 +65,13 @@ void XPRS_CC SalvaMelhorSol(XPRSprob prob, void *my_object);
 
 /* rotinas auxiliares */
 void errormsg(const char *sSubName,int nLineNo,int nErrCode);
-void ImprimeSol(double *x);
+void ImprimeSol(double *x, int n);
 void HeuristicaPrimal(int node);
 void Mochila(double *c,int *w,int b,int n,int *x,double *val);
 
 /* mensagem de uso do programa */
 void showUsage() {
-	printf ("Uso: knap <estrategia> <prof_max_para_corte> < <instancia> \n");
+	printf ("Uso: bnc <estrategia> <prof_max_para_corte> < <instancia> \n");
         printf ("- estrategia: string de \"0\"\'s e \"1\"\'s de tamanho 2.\n");
 	printf ("  - 1a. posição é \"1\" se a heurística primal é usada. \n");
 	printf ("  - 2a. posição é \"1\" se as minhas \"cover inequalities\" forem separadas.\n");
@@ -82,7 +82,6 @@ void showUsage() {
 }
 
 CuttingPlanes::CuttingPlanes(IntegerProgram &ip, bool hp, bool bnc) : ip(ip) {
-
     bool relaxed;
 
     // FIXME: colocar em IntegerProgram
@@ -90,7 +89,7 @@ CuttingPlanes::CuttingPlanes(IntegerProgram &ip, bool hp, bool bnc) : ip(ip) {
 
     /* inicializa valores de variaveis globais */
     HEURISTICA_PRIMAL = hp; BRANCH_AND_CUT = bnc;
-    totcuts=0; totnodes = 0; itersep=0; zstar=XPRS_MINUSINFINITY; 
+    totcuts=0; totnodes = 0; itersep=0; zstar=XPRS_PLUSINFINITY; 
     MAX_NODE_DEPTH_FOR_SEP = 1000000;
     NODE_BEST_INTEGER_SOL = -1;
 
@@ -197,13 +196,13 @@ bool CuttingPlanes::solve() {
       }
     }
 
-    /* Desabilita a separacao de cortes do XPRESS. Mochila é muito fácil para o XPRESS */
+    /* Desabilita a separacao de cortes do XPRESS. */
     xpress_ret=XPRSsetintcontrol(prob,XPRS_CUTSTRATEGY,0);
     if (xpress_ret) 
       errormsg("Main: Erro ao tentar setar o XPRS_CUTSTRATEGY.\n",__LINE__,xpress_ret);
 
     /* callback para salvar a melhor solucao inteira encontrada */
-    xpress_ret=XPRSsetcbintsol(prob,SalvaMelhorSol,NULL);
+    xpress_ret=XPRSsetcbintsol(prob, SalvaMelhorSol, NULL);
     if (xpress_ret) 
       errormsg("Main: Erro na chamada da rotina XPRSsetcbintsol.\n",__LINE__,xpress_ret);
   
@@ -217,26 +216,26 @@ bool CuttingPlanes::solve() {
     xpress_ret=XPRSminim(prob,"g");
     if (xpress_ret) errormsg("Main: Erro na chamada da rotina XPRSminim.\n",__LINE__,xpress_ret);
 
-    /* imprime a solucao otima ou a melhor solucao encontrada (se achou)  e o seu valor */
+    /* imprime a solucao otima ou a melhor solucao encontrada (se achou) e o seu valor */
     xpress_ret=XPRSgetintattrib(prob,XPRS_MIPSTATUS,&xpress_status);
     if (xpress_ret) 
       errormsg("Main: Erro na chamada da rotina XPRSgetintatrib.\n",__LINE__,xpress_ret);
 
     if ((xpress_status==XPRS_MIP_OPTIMAL)  || 
 	(xpress_status==XPRS_MIP_SOLUTION) ||
-	(zstar > XPRS_MINUSINFINITY)){
+	(zstar < XPRS_PLUSINFINITY)){
 
       XPRSgetintattrib(prob,XPRS_MIPSOLNODE,&NODE_BEST_INTEGER_SOL);
       printf("\n");
       printf("- Valor da solucao otima =%12.6f \n",(double)(zstar));
       printf("- Variaveis otimas: (nó=%d)\n",NODE_BEST_INTEGER_SOL);
 
-      if ( zstar == XPRS_MINUSINFINITY ) {
+      if (zstar == XPRS_PLUSINFINITY) {
 	xpress_ret=XPRSgetsol(prob,xstar,NULL,NULL,NULL);
 	if (xpress_ret) 
 	  errormsg("Main: Erro na chamada da rotina XPRSgetsol\n",__LINE__,xpress_ret);
       }
-      ImprimeSol(xstar);
+      ImprimeSol(xstar, n);
 
     } else  printf("Main: programa terminou sem achar solucao inteira !\n");
 
@@ -262,7 +261,7 @@ bool CuttingPlanes::solve() {
     if (xpress_ret) 
       errormsg("Main: Erro na chamada de XPRSgetdblattrib.\n",__LINE__,xpress_ret);
 
-    if (melhor_limitante_dual < zstar+EPSILON)
+    if (melhor_limitante_dual > zstar+EPSILON)
       melhor_limitante_dual=zstar; 
     printf(".melhor limitante dual ............ = %.6f\n",melhor_limitante_dual);
 
@@ -319,7 +318,8 @@ void XPRS_CC SalvaMelhorSol(XPRSprob prob, void *my_object)
    if (xpress_ret) 
      errormsg("SalvaMelhorSol: Erro na chamada da rotina XPRSgetsol\n",__LINE__,xpress_ret);
 
-   /* testa se a solução é viável */
+   /* testa se a solução é viável
+      FIXME: porque? essa callback só não é chamada quando a solução é viável?*/
    // for(i=0;i<cols;i++) peso_aux += x[i]*w[i];
    // viavel=(peso_aux <= W + EPSILON);
 
@@ -330,25 +330,29 @@ void XPRS_CC SalvaMelhorSol(XPRSprob prob, void *my_object)
    for(i=0;i<cols;i++) 
      if (x[i]>EPSILON) printf(" x[%3d] = %12.6f (w=%6d, c=%12.6f)\n",i,x[i],w[i],c[i]);
    */
+   
+   viavel = true;
 
    /* se a solucao tiver custo melhor que a melhor solucao disponivel entao salva */
-   if ((objval > zstar-EPSILON) && viavel) {
+   if ((objval < zstar-EPSILON) && viavel) {
 
      printf(".. atualizando melhor solução ...\n");
      for(i=0;i<cols;i++) xstar[i]=x[i];
      zstar=objval;
      
      /* informa xpress sobre novo incumbent */
-     xpress_ret=XPRSsetdblcontrol(prob,XPRS_MIPABSCUTOFF,zstar+1.0-EPSILON);
+     xpress_ret=XPRSsetdblcontrol(prob, XPRS_MIPABSCUTOFF, zstar + 1.0 - EPSILON);
      if (xpress_ret) 
        errormsg("SalvaMelhorSol: XPRSsetdblcontrol.\n",__LINE__,xpress_ret);
      
-     NODE_BEST_INTEGER_SOL=node; 
+     NODE_BEST_INTEGER_SOL = node; 
+
      /* Impressão para saída */
      printf("..Melhor solução inteira encontrada no nó %d, peso %d e custo %12.6f\n",
-	    NODE_BEST_INTEGER_SOL,peso_aux,zstar);
+	    NODE_BEST_INTEGER_SOL, peso_aux, zstar);
      printf("..Solução encontrada: \n");
-     ImprimeSol(x);
+
+     ImprimeSol(x, cols);
    }
    
    return;
@@ -519,109 +523,6 @@ int XPRS_CC Cortes(XPRSprob prob, void* data)
   return 0;
 }
 
-/**********************************************************************************\
-*  Rotina que resolve uma mochila binaria por Programação Dinâmica.
-*  Autor: Cid Carvalho de Souza
-*  Data: 10/2002
-*
-*  Objetivo: resolver uma mochila binaria maximizando o custo cx
-*  e com uma restricao do tipo wx <= b.
-*
-*  Entrada: vetores $c$ (custos), $w$ (pesos), $b$ (capacidade)
-*  e $n$ numero de itens.
-*
-*  Saidas: vetor $x$ (solucoes) e $z$ (valor otimo).
-*
-*  Observacao: todos os vetores sao inteiros, exceto os custos
-*  que sao "double", assim como o valor otimo $z$.
-*
-*  IMPORTANTE: todos os  vetores comecam na posicao zero  mas os itens
-*  são supostamente numerados de 1 a n. Assim, c[1] é o custo do item 1.
-*
-\**********************************************************************************/
-
-void Mochila(double *c,int *w,int b,int n,int *x,double *val) {
-  int k, d;
-
-  double aux, limite=0.0;   /* variaveis auxiliares para calculos de custo */
-  double **z;   /* matriz de resultados intermediarios da Prog. Din */
-
-  /* aloca espaco para $z$ */
-  z=(double **)malloc((n+1)*sizeof(double *));
-  for(k=0;k<=n;k++) z[k]=(double *)malloc((b+1)*sizeof(double));
-
-
-  /* inicializa o $z$ */
-  for(k=0;k<=n;k++)
-    for(d=0;d<=b;d++) z[k][d]=0.0;
-
-  /* calculo do "limite" (numero negativo cujo valor absoluto eh 
-     maior que o valor otimo com certeza): foi inicializado com ZERO. */
-  for(k=1;k<=n;k++) limite=limite-c[k];
-
-  /* prog. din.: completando a matriz z */
-  for(k=1;k<=n;k++)
-    for(d=1;d<=b;d++){
-      /* aux sera igual ao valor de z[k-1][d-w[k]] quando esta celula 
-         existir ou sera igual ao "limite" caso contrario. */
-      aux = (d-w[k]) < 0 ? limite : z[k-1][d-w[k]] ;
-      z[k][d] = (z[k-1][d] > aux+c[k]) ? z[k-1][d] : aux+c[k];
-    }
-
-  /* carrega o vetor solucao */
-  for(k=0;k<=n;k++) x[k]=0;
-
-  d=b;   k=n;
-  while ((d!=0) && (k!=0)) {
-    if (z[k-1][d] != z[k][d]) {
-      d=d-w[k];   x[k]=1;
-    }
-    k--;
-  }
-
-  *val=z[n][b];
-
-  /* desaloca espaco de $z$ */
-  for(k=0;k<=n;k++) free(z[k]);
-  free(z);
-
-  return;
-}
-
-/**********************************************************************************\
-*  Rotina  que encontra  uma solução  heurística para  mochila binaria
-*  dada a solução e uma relaxação linear.
-*
-*  Autor: Cid Carvalho de Souza
-*  Data: 10/2003
-*
-*  Entrada: a solução fracionária corrente é $x$ e o nó corrente sendo
-*  explorado é o nó "node".
-*
-*  Idéia da heurística: ordenar itens em ordem decrescente dos valores
-*  de $x$. Em seguida ir construindo a solução heurística $xh$ fixando
-*  as variáveis em 1 ao varrer o vetor na ordem decrescente enquanto a
-*  capacidade da mochila permitir.
-*
-\**********************************************************************************/
-
-typedef struct{
-  double valor;
-  int indice;
-} RegAux;
-
-/* rotina auxiliar  de comparacao para o "qsort".  CUIDADO: Feito para
- * ordenar em ordem *DECRESCENTE* ! */
-int ComparaRegAux(const void *a, const void *b) {
-    int ret;
-    if (((RegAux *)a)->valor > ((RegAux *)b)->valor) ret=-1;
-    else {
-	if (((RegAux *)a)->valor < ((RegAux *)b)->valor) ret=1;
-	else ret=0;
-    }
-    return ret; 
-}
-
 void HeuristicaPrimal(int node){
   // /* variáveis locais */
   // RegAux *xh;
@@ -680,17 +581,11 @@ void HeuristicaPrimal(int node){
   // return;
 }
 
-/*********************************************************************************\
-*  Rotina  que imprime uma solução  heurística para  mochila binaria
-*  dada a solução e uma relaxação linear.
-*
-*  Autor: Cid Carvalho de Souza
-*  Data: 10/2003
-\*********************************************************************************/
-void ImprimeSol(double *a){
-  // int i;
-  // for(i=0;i<n;i++) if (a[i] > EPSILON)
-  //   printf("x[%3d]=%12.6f (w[%3d]=%6d, c[%3d]=%12.6f)\n",i,a[i],i,w[i],i,c[i]);
+void ImprimeSol(double *a, int n){
+  int i;
+  for(i=0;i<n;i++)
+    if (a[i] > EPSILON)
+      printf("        x[%3d]=%12.6f\n",i, a[i]);
 }
 
 /**********************************************************************************\
