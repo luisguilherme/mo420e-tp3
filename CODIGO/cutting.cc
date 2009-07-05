@@ -65,13 +65,13 @@ void XPRS_CC SalvaMelhorSol(XPRSprob prob, void *my_object);
 
 /* rotinas auxiliares */
 void errormsg(const char *sSubName,int nLineNo,int nErrCode);
-void ImprimeSol(double *x);
+void ImprimeSol(double *x, int n);
 void HeuristicaPrimal(int node);
 void Mochila(double *c,int *w,int b,int n,int *x,double *val);
 
 /* mensagem de uso do programa */
 void showUsage() {
-	printf ("Uso: knap <estrategia> <prof_max_para_corte> < <instancia> \n");
+	printf ("Uso: bnc <estrategia> <prof_max_para_corte> < <instancia> \n");
         printf ("- estrategia: string de \"0\"\'s e \"1\"\'s de tamanho 2.\n");
 	printf ("  - 1a. posição é \"1\" se a heurística primal é usada. \n");
 	printf ("  - 2a. posição é \"1\" se as minhas \"cover inequalities\" forem separadas.\n");
@@ -82,7 +82,6 @@ void showUsage() {
 }
 
 CuttingPlanes::CuttingPlanes(IntegerProgram &ip, bool hp, bool bnc) : ip(ip) {
-
     bool relaxed;
 
     // FIXME: colocar em IntegerProgram
@@ -90,7 +89,7 @@ CuttingPlanes::CuttingPlanes(IntegerProgram &ip, bool hp, bool bnc) : ip(ip) {
 
     /* inicializa valores de variaveis globais */
     HEURISTICA_PRIMAL = hp; BRANCH_AND_CUT = bnc;
-    totcuts=0; totnodes = 0; itersep=0; zstar=XPRS_MINUSINFINITY; 
+    totcuts=0; totnodes = 0; itersep=0; zstar=XPRS_PLUSINFINITY; 
     MAX_NODE_DEPTH_FOR_SEP = 1000000;
     NODE_BEST_INTEGER_SOL = -1;
 
@@ -196,14 +195,13 @@ bool CuttingPlanes::solve() {
 	errormsg("Main: rotina XPRSsetcbcutmgr.\n",__LINE__,xpress_ret);
     }
   }
-
-  /* Desabilita a separacao de cortes do XPRESS. Mochila é muito fácil para o XPRESS */
+  /* Desabilita a separacao de cortes do XPRESS. */
   xpress_ret=XPRSsetintcontrol(prob,XPRS_CUTSTRATEGY,0);
   if (xpress_ret) 
     errormsg("Main: Erro ao tentar setar o XPRS_CUTSTRATEGY.\n",__LINE__,xpress_ret);
-
+  
   /* callback para salvar a melhor solucao inteira encontrada */
-  xpress_ret=XPRSsetcbintsol(prob,SalvaMelhorSol,NULL);
+  xpress_ret=XPRSsetcbintsol(prob, SalvaMelhorSol, NULL);
   if (xpress_ret) 
     errormsg("Main: Erro na chamada da rotina XPRSsetcbintsol.\n",__LINE__,xpress_ret);
   
@@ -212,33 +210,34 @@ bool CuttingPlanes::solve() {
    * encontrada. */
   x=(double *)malloc(n*sizeof(double));
   xstar=(double *)malloc(n*sizeof(double));
-
+  
   /* resolve o problema */
   xpress_ret=XPRSminim(prob,"g");
   if (xpress_ret) errormsg("Main: Erro na chamada da rotina XPRSminim.\n",__LINE__,xpress_ret);
-
-  /* imprime a solucao otima ou a melhor solucao encontrada (se achou)  e o seu valor */
+  
+  /* imprime a solucao otima ou a melhor solucao encontrada (se achou) e o seu valor */
   xpress_ret=XPRSgetintattrib(prob,XPRS_MIPSTATUS,&xpress_status);
   if (xpress_ret) 
     errormsg("Main: Erro na chamada da rotina XPRSgetintatrib.\n",__LINE__,xpress_ret);
-
+  
   if ((xpress_status==XPRS_MIP_OPTIMAL)  || 
       (xpress_status==XPRS_MIP_SOLUTION) ||
-      (zstar > XPRS_MINUSINFINITY)){
-
+      (zstar < XPRS_PLUSINFINITY)){
+    
     XPRSgetintattrib(prob,XPRS_MIPSOLNODE,&NODE_BEST_INTEGER_SOL);
     printf("\n");
     printf("- Valor da solucao otima =%12.6f \n",(double)(zstar));
     printf("- Variaveis otimas: (nó=%d)\n",NODE_BEST_INTEGER_SOL);
-
-    if ( zstar == XPRS_MINUSINFINITY ) {
+    
+    if (zstar == XPRS_PLUSINFINITY) {
       xpress_ret=XPRSgetsol(prob,xstar,NULL,NULL,NULL);
       if (xpress_ret) 
 	errormsg("Main: Erro na chamada da rotina XPRSgetsol\n",__LINE__,xpress_ret);
     }
-    ImprimeSol(xstar);
-
-  } else  printf("Main: programa terminou sem achar solucao inteira !\n");
+    ImprimeSol(xstar, n);
+    
+  } 
+  else  printf("Main: programa terminou sem achar solucao inteira !\n");
 
   /* impressao de estatisticas */
   printf("********************\n");
@@ -247,31 +246,28 @@ bool CuttingPlanes::solve() {
   printf(".total de cortes inseridos ........ = %d\n",totcuts);
   printf(".valor da FO da primeira relaxação. = %.6f\n",objval_relax);
   printf(".valor da FO no nó raiz ........... = %.6f\n",objval_node1);
-
+  
   xpress_ret=XPRSgetintattrib(prob,XPRS_NODES,&totnodes);
   if (xpress_ret) 
     errormsg("Main: Erro na chamada da rotina XPRSgetintatrib.\n",__LINE__,xpress_ret);
-
+  
   printf(".total de nós explorados .......... = %d\n",totnodes);
   printf(".nó da melhor solucao inteira ..... = %d\n",NODE_BEST_INTEGER_SOL);
   printf(".valor da melhor solucao inteira .. = %d\n",(int)(zstar+0.5));  
   /* somar 0.5 evita erros de arredondamento */
-
+  
   /* verifica o valor do melhor_limitante_dual */
   xpress_ret=XPRSgetdblattrib(prob,XPRS_BESTBOUND,&melhor_limitante_dual);
   if (xpress_ret) 
     errormsg("Main: Erro na chamada de XPRSgetdblattrib.\n",__LINE__,xpress_ret);
-
-  if (melhor_limitante_dual < zstar+EPSILON)
+  
+  if (melhor_limitante_dual > zstar+EPSILON)
     melhor_limitante_dual=zstar; 
   printf(".melhor limitante dual ............ = %.6f\n",melhor_limitante_dual);
-
+  
   /* libera a memoria usada pelo problema */
-  /*
-    xpress_ret=XPRSdestroyprob(prob);
-    if (xpress_ret) 
-    errormsg("Main: Erro na liberacao da memoria usada pelo problema.\n",__LINE__,xpress_ret);
-  */
+
+  xpress_ret=XPRSdestroyprob(prob);
 
   /* libera toda memoria usada no programa */
   free(qrtype);
@@ -298,60 +294,64 @@ bool CuttingPlanes::solve() {
  */
 void XPRS_CC SalvaMelhorSol(XPRSprob prob, void *my_object)
 {
-  int i, cols, peso_aux=0, node;
-  double objval;
-  bool viavel;
+   int i, cols, peso_aux=0, node;
+   double objval;
+   bool viavel;
 
-  /* pega o numero do nó corrente */
-  xpress_ret=XPRSgetintattrib(prob,XPRS_NODES,&node);
-  if (xpress_ret) 
-    errormsg("SalvaMelhorSol: rotina XPRSgetintattrib.\n",__LINE__,xpress_ret);
+   /* pega o numero do nó corrente */
+   xpress_ret=XPRSgetintattrib(prob,XPRS_NODES,&node);
+   if (xpress_ret) 
+     errormsg("SalvaMelhorSol: rotina XPRSgetintattrib.\n",__LINE__,xpress_ret);
 
-  xpress_ret=XPRSgetintattrib(prob,XPRS_COLS,&cols);
-  if (xpress_ret) 
-    errormsg("SalvaMelhorSol: rotina XPRSgetintattrib\n",__LINE__,xpress_ret);
+   xpress_ret=XPRSgetintattrib(prob,XPRS_COLS,&cols);
+   if (xpress_ret) 
+       errormsg("SalvaMelhorSol: rotina XPRSgetintattrib\n",__LINE__,xpress_ret);
 
-  xpress_ret=XPRSgetdblattrib(prob,XPRS_LPOBJVAL,&objval);
-  if (xpress_ret) 
-    errormsg("SalvaMelhorSol: rotina XPRSgetdblattrib\n",__LINE__,xpress_ret);
+   xpress_ret=XPRSgetdblattrib(prob,XPRS_LPOBJVAL,&objval);
+   if (xpress_ret) 
+       errormsg("SalvaMelhorSol: rotina XPRSgetdblattrib\n",__LINE__,xpress_ret);
 
-  xpress_ret=XPRSgetsol(prob,x,NULL,NULL,NULL);
-  if (xpress_ret) 
-    errormsg("SalvaMelhorSol: Erro na chamada da rotina XPRSgetsol\n",__LINE__,xpress_ret);
+   xpress_ret=XPRSgetsol(prob,x,NULL,NULL,NULL);
+   if (xpress_ret) 
+     errormsg("SalvaMelhorSol: Erro na chamada da rotina XPRSgetsol\n",__LINE__,xpress_ret);
 
-  /* testa se a solução é viável */
-  // for(i=0;i<cols;i++) peso_aux += x[i]*w[i];
-  // viavel=(peso_aux <= W + EPSILON);
+   /* testa se a solução é viável
+      FIXME: porque? essa callback só não é chamada quando a solução é viável?*/
+   // for(i=0;i<cols;i++) peso_aux += x[i]*w[i];
+   // viavel=(peso_aux <= W + EPSILON);
 
-  /*
-    printf("\n..Encontrada uma solução inteira (nó=%d): valor=%f, peso=%d,",
-    node,objval,peso_aux);
-    if (viavel) printf(" viavel\n"); else printf(" inviavel\n");
-    for(i=0;i<cols;i++) 
-    if (x[i]>EPSILON) printf(" x[%3d] = %12.6f (w=%6d, c=%12.6f)\n",i,x[i],w[i],c[i]);
-  */
-
-  /* se a solucao tiver custo melhor que a melhor solucao disponivel entao salva */
-  if ((objval > zstar-EPSILON) && viavel) {
-
-    printf(".. atualizando melhor solução ...\n");
-    for(i=0;i<cols;i++) xstar[i]=x[i];
-    zstar=objval;
-     
-    /* informa xpress sobre novo incumbent */
-    xpress_ret=XPRSsetdblcontrol(prob,XPRS_MIPABSCUTOFF,zstar+1.0-EPSILON);
-    if (xpress_ret) 
-      errormsg("SalvaMelhorSol: XPRSsetdblcontrol.\n",__LINE__,xpress_ret);
-     
-    NODE_BEST_INTEGER_SOL=node; 
-    /* Impressão para saída */
-    printf("..Melhor solução inteira encontrada no nó %d, peso %d e custo %12.6f\n",
-	   NODE_BEST_INTEGER_SOL,peso_aux,zstar);
-    printf("..Solução encontrada: \n");
-    ImprimeSol(x);
-  }
+   /*
+   printf("\n..Encontrada uma solução inteira (nó=%d): valor=%f, peso=%d,",
+	  node,objval,peso_aux);
+   if (viavel) printf(" viavel\n"); else printf(" inviavel\n");
+   for(i=0;i<cols;i++) 
+     if (x[i]>EPSILON) printf(" x[%3d] = %12.6f (w=%6d, c=%12.6f)\n",i,x[i],w[i],c[i]);
+   */
    
-  return;
+   viavel = true;
+
+   /* se a solucao tiver custo melhor que a melhor solucao disponivel entao salva */
+   if ((objval < zstar-EPSILON) && viavel) {
+
+     printf(".. atualizando melhor solução ...\n");
+     for(i=0;i<cols;i++) xstar[i]=x[i];
+     zstar=objval;
+     
+     /* informa xpress sobre novo incumbent */
+     xpress_ret=XPRSsetdblcontrol(prob, XPRS_MIPABSCUTOFF, zstar + 1.0 - EPSILON);
+     if (xpress_ret) 
+       errormsg("SalvaMelhorSol: XPRSsetdblcontrol.\n",__LINE__,xpress_ret);
+     
+     NODE_BEST_INTEGER_SOL = node; 
+
+     /* Impressão para saída */
+     printf("..Melhor solução inteira encontrada no nó %d, peso %d e custo %12.6f\n",
+	    NODE_BEST_INTEGER_SOL, peso_aux, zstar);
+     printf("..Solução encontrada: \n");
+
+     ImprimeSol(x, cols);
+   }
+   return;
 }
 
 /**********************************************************************************\
@@ -407,7 +407,7 @@ int XPRS_CC Cortes(XPRSprob prob, void* classe)
   /* Imprime dados sobre o nó */
   printf(".Valor ótimo do LP: %12.6f\n",lpobjval);
   printf(".Solução ótima do LP:\n");
-  ImprimeSol(x);
+  ImprimeSol(x,((CuttingPlanes *) classe)->nvars());
   printf(".Rotina de separação\n");
     
   /* guarda o valor da função objetivo no primeiro nó */
@@ -519,6 +519,7 @@ int XPRS_CC Cortes(XPRSprob prob, void* classe)
   return 0;
 }
 
+
 /**********************************************************************************\
  *  Rotina  que encontra  uma solução  heurística para  mochila binaria
  *  dada a solução e uma relaxação linear.
@@ -593,17 +594,11 @@ void CuttingPlanes::HeuristicaPrimal(int node){
   
 }
 
-/*********************************************************************************\
-*  Rotina  que imprime uma solução  heurística para  mochila binaria
-*  dada a solução e uma relaxação linear.
-*
-*  Autor: Cid Carvalho de Souza
-*  Data: 10/2003
-\*********************************************************************************/
-void ImprimeSol(double *a){
-  // int i;
-  // for(i=0;i<n;i++) if (a[i] > EPSILON)
-  //   printf("x[%3d]=%12.6f (w[%3d]=%6d, c[%3d]=%12.6f)\n",i,a[i],i,w[i],i,c[i]);
+void ImprimeSol(double *a, int n){
+  int i;
+  for(i=0;i<n;i++)
+    if (a[i] > EPSILON)
+      printf("        x[%3d]=%12.6f\n",i, a[i]);
 }
 
 /**********************************************************************************\
