@@ -2,7 +2,21 @@
 #include "stab_instance.H"
 #include "stab.H"
 
-
+inline int ijtoe(int i, int j, int n) {
+  int e = 0;
+  for(int k=0;k<i;k++) e += n-k;
+  e += j-i-1;
+  return(e);
+}
+inline ii etoij(int e, int n) {
+  int i = 0, j;
+  for(int k=0;e >= 0;k++) {
+    i = k;
+    e -= n-k-1;
+  }
+  j = e + n;
+  return(std::make_pair(i,j));
+}
 
 void Stab::getParam(int& ncol,int& nrow,char** rowtype,double** rhs,
 		    double** obj,int** colbeg, int** rowidx,
@@ -99,7 +113,18 @@ double Stab::heurPrimal(std::vector<double>& in, std::vector<double>& out) {
     }
     paired[i] = paired[pairp] = true;
     out[edgep] = 1;
-    y = (double) std::max((int)(y+EPSILON),instance.nintersections[edgep]);
+
+  }
+
+  for(int i=0;i<n;i++) {
+    for(int j=i+1;j<n;j++) {
+      int prey = 0;
+      for(int e=0;e<m;e++)
+	if (out[e] > 1 - EPSILON && intersect(ii(i,j),etoij(e,n)) )
+	  prey++;
+      
+      y = std::max((int) (y+EPSILON),prey);
+    }
   }
   out[m] = y;
   return(y);
@@ -174,6 +199,8 @@ inline bool Stab::intersect(ii a, ii b) {
 Stab::Stab(StabInstance& instance) {
   this->instance = instance;
   n = instance.n;
+  nrows = n + (n*(n-1))/2; 
+  ncols = (n*(n-1))/2 + 1;
 
   // for(int i=0;i<n;i++)
   //   for(int j=0;j<n;j++) 

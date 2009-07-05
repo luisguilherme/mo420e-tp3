@@ -18,9 +18,9 @@ public:
 			double**,double**,double**,int&,char**,int**,bool&) { }
   
   /* retornam se conseguiram encontrar cortes */
-  virtual bool heurCuts(std::vector<double>& xsol,int& ncuts, int** mtype, char** qrtype, double** drhs, int** mstart, int** mcols, double** dmatval);
+  virtual bool heurCuts(std::vector<double>& xsol,int& ncuts, int** mtype, char** qrtype, double** drhs, int** mstart, int** mcols, double** dmatval) { return false; }
 
-  virtual bool exactCuts(std::vector<double>& xsol,int& ncuts, int** mtype, char** qrtype, double** drhs, int** mstart, int** mcols, double** dmatval);
+  virtual bool exactCuts(std::vector<double>& xsol,int& ncuts, int** mtype, char** qrtype, double** drhs, int** mstart, int** mcols, double** dmatval) { return false; }
   
   virtual double heurPrimal(std::vector<double>& in, std::vector<double>& out) { return 0.0; }
 };

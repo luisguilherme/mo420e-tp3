@@ -8,7 +8,7 @@ int main(int argc, char* argv[]) {
   a.loadFrom(fopen(argv[1],"r"));
 
   Stab s(a);
-  CuttingPlanes cp(s, false, false);
+  CuttingPlanes cp(s, true, false);
 
   cp.solve();
   

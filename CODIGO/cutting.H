@@ -1,4 +1,6 @@
 #include "integer_program.H"
+#include "xprs.h"
+
 
 class CuttingPlanes {
   IntegerProgram &ip;
@@ -16,6 +18,7 @@ class CuttingPlanes {
 
 public:
   CuttingPlanes(IntegerProgram &ip, bool hp, bool bnc);
+  void HeuristicaPrimal(int node);
   bool solve();
 
 };
