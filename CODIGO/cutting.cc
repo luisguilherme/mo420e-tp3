@@ -428,15 +428,14 @@ int XPRS_CC Cortes(XPRSprob prob, void* classe)
 							 &mtype, &qrtype,
 							 &drhs, &mstart,
 							 &mcols, &dmatval);
-
   /* Impressão do corte */
   if (encontrou) {
     printf("..cortes encontrados: %d\n", ncuts);
-    //printf("..corte encontrado: (viol=%12.6f)\n\n   ",1.0-ajuste_val+val);
+    // printf("..corte encontrado: (viol=%12.6f)\n\n   ",1.0-ajuste_val+val);
     // for(i=0;i<irhs;i++){
     //   printf("x[%d] ",mcols[i]);
     //   if (i==irhs-1)
-    //     printf("<= %d\n\n",irhs-1);
+    // 	printf("<= %d\n\n",irhs-1);
     //   else printf("+ ");
     // }
 
