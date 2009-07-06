@@ -3,21 +3,6 @@
 #include "stab.H"
 #include "ugraph.hpp"
 
-inline int ijtoe(int i, int j, int n) {
-  int e = 0;
-  for(int k=0;k<i;k++) e += n-k;
-  e += j-i-1;
-  return(e);
-}
-inline ii etoij(int e, int n) {
-  int i = 0, j;
-  for(int k=0;e >= 0;k++) {
-    i = k;
-    e -= n-k-1;
-  }
-  j = e + n;
-  return(std::make_pair(i,j));
-}
 
 void Stab::getParam(int& ncol,int& nrow,char** rowtype,double** rhs,
 		    double** obj,int** colbeg, int** rowidx,
@@ -358,7 +343,8 @@ int Stab::nvertices(int u, int removed, graphtype *G, std::vector<bool> &marked)
 }
 
 inline bool Stab::intersect(ii a, ii b) {
-  return ( present(instance.intersection[a],b) );
+  //return ( present(instance.intersection[a],b) );
+  return instance.interM[ijtoe(a.first,a.second,instance.n)][ijtoe(b.first,b.second,instance.n)];
 }
 
 Stab::Stab(StabInstance& instance) {
