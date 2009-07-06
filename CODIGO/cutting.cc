@@ -132,7 +132,10 @@ CuttingPlanes::CuttingPlanes(IntegerProgram &ip, bool hp, bool bnc, int mndfs = 
 bool CuttingPlanes::solve() {
   /* impressão para conferência */
   if (HEURISTICA_PRIMAL) printf("*** Heurística Primal será usada\n");
-
+  
+#warning Talvez tirar depois
+  xpress_ret=XPRSsetcbcutmgr(prob, Cortes, this);
+  
   if (BRANCH_AND_CUT) {
 
     printf("*** Algoritmo de branch-and-cut.\n");
@@ -154,7 +157,7 @@ bool CuttingPlanes::solve() {
     /* callback indicando que sera feita separacao de cortes em cada
        nó da arvore de B&B */
     xpress_ret=XPRSsetcbcutmgr(prob, Cortes, this);
-
+    
     if (xpress_ret)
       errormsg("Main: Erro na chamada da rotina XPRSsetcbcutmgr.\n",__LINE__,xpress_ret);
     /*=====================================================================================*/
@@ -322,7 +325,7 @@ void XPRS_CC SalvaMelhorSol(XPRSprob prob, void *my_object)
    /* se a solucao tiver custo melhor que a melhor solucao disponivel entao salva */
    if ((objval < zstar-EPSILON) && viavel) {
 
-     printf("..Atualizando melhor solução ...\n");
+     // printf("..Atualizando melhor solução ...\n");
      for(i=0;i<cols;i++) xstar[i]=x[i];
      zstar=objval;
 
@@ -334,9 +337,9 @@ void XPRS_CC SalvaMelhorSol(XPRSprob prob, void *my_object)
      NODE_BEST_INTEGER_SOL = node;
 
      /* Impressão para saída */
-     printf("..Melhor solução inteira encontrada no nó %d, peso %d e custo %12.6f\n",
-	    NODE_BEST_INTEGER_SOL, peso_aux, zstar);
-     printf("..Solução encontrada: \n");
+     // printf("..Melhor solução inteira encontrada no nó %d, peso %d e custo %12.6f\n",
+     // 	    NODE_BEST_INTEGER_SOL, peso_aux, zstar);
+     // printf("..Solução encontrada: \n");
 
      ImprimeSol(x, cols);
    }
@@ -353,6 +356,19 @@ int XPRS_CC Cortes(XPRSprob prob, void* classe)
   int node, node_depth, solfile, ret;
   int nLPStatus, nIntInf;
   double lpobjval;
+  
+  double melhor_limitante_dual;
+
+  /* pega o valor otimo do LP ... */
+  XPRSgetdblattrib(prob, XPRS_LPOBJVAL,&lpobjval);
+
+  /* verifica o número do nó em que se encontra */
+  XPRSgetintattrib(prob,XPRS_NODES,&node);
+
+  xpress_ret=XPRSgetdblattrib(prob,XPRS_BESTBOUND,&melhor_limitante_dual);
+
+  fprintf(stderr,"%d\t%12.6lf\t%12.6lf\t%12.6lf\n",node,lpobjval,zstar,melhor_limitante_dual);
+  
 
   /* se for B&B puro e não usar Heurística Primal, não faz nada */
   if ((!BRANCH_AND_CUT) && (!HEURISTICA_PRIMAL)) return 0;
@@ -376,26 +392,20 @@ int XPRS_CC Cortes(XPRSprob prob, void* classe)
   /* Restaura de volta o valor do SOLUTIONFILE */
   XPRSsetintcontrol(prob,XPRS_SOLUTIONFILE,solfile);
 
-  /* verifica o número do nó em que se encontra */
-  XPRSgetintattrib(prob,XPRS_NODES,&node);
-
   /* Imprime cabeçalho do nó */
-  printf("\n=========\n");
-  printf("Nó %d",node);
-  printf("\n=========\n");
-  printf("Laço de separação: %d\n",itersep);
+  // printf("\n=========\n");
+  // printf("Nó %d",node);
+  // printf("\n=========\n");
+  // printf("Laço de separação: %d\n",itersep);
 
   /* executa a heurística primal se for o caso */
   if (HEURISTICA_PRIMAL) ((CuttingPlanes *) classe)->HeuristicaPrimal(node);
 
-  /* pega o valor otimo do LP ... */
-  XPRSgetdblattrib(prob, XPRS_LPOBJVAL,&lpobjval);
-
   /* Imprime dados sobre o nó */
-  printf(".Valor ótimo do LP: %12.6f\n",lpobjval);
-  printf(".Solução ótima do LP:\n");
-  ImprimeSol(x,((CuttingPlanes *) classe)->nvars(), false);
-  printf(".Rotina de separação\n");
+  // printf(".Valor ótimo do LP: %12.6f\n",lpobjval);
+
+  // ImprimeSol(x,((CuttingPlanes *) classe)->nvars(), false);
+  // printf(".Rotina de separação\n");
 
   /* guarda o valor da função objetivo no primeiro nó */
   if (node==1) objval_node1=lpobjval;
@@ -411,7 +421,7 @@ int XPRS_CC Cortes(XPRSprob prob, void* classe)
   xpress_ret=XPRSgetintattrib(prob,XPRS_NODEDEPTH,&node_depth);
   if (xpress_ret)
      errormsg("Cortes: erro na chamada da rotina XPRSgetintattrib.\n",__LINE__,xpress_ret);
-  printf(".Node Depth: %d\n", node_depth);
+  //  printf(".Node Depth: %d\n", node_depth);
   if (node_depth > MAX_NODE_DEPTH_FOR_SEP) return 0;
 
   /* variável indicando se achou desigualdade violada ou não */
@@ -425,7 +435,7 @@ int XPRS_CC Cortes(XPRSprob prob, void* classe)
 
   /* Impressão do corte */
   if (encontrou) {
-    printf("..cortes encontrados: %d\n", ncuts);
+    //    printf("..cortes encontrados: %d\n", ncuts);
     //printf("..corte encontrado: (viol=%12.6f)\n\n   ",1.0-ajuste_val+val);
     // for(i=0;i<irhs;i++){
     //   printf("x[%d] ",mcols[i]);
@@ -439,9 +449,9 @@ int XPRS_CC Cortes(XPRSprob prob, void* classe)
     totcuts+=ncuts;
     if (xpress_ret)
       errormsg("Cortes: erro na chamada da rotina XPRSgetintattrib.\n",__LINE__,xpress_ret);
-  } else printf("..corte não encontrado\n");
+  } // else printf("..corte não encontrado\n");
 
-  printf("..Fim da rotina de cortes\n");
+  // printf("..Fim da rotina de cortes\n");
 
   /* salva um arquivo MPS com o LP original */
   xpress_ret=XPRSwriteprob(prob, "LPcuts", "l");
@@ -474,13 +484,13 @@ void CuttingPlanes::HeuristicaPrimal(int node) {
   zheur = ip.heurPrimal(xsol,xheur);
 
   /* Impressão da solução heurística encontrada */
-  printf("..Solução Heurística Primal encontrada:\n");
-  printf("%12.6f\n",zheur);
+  // printf("..Solução Heurística Primal encontrada:\n");
+  // printf("%12.6f\n",zheur);
 
   /* verifica se atualizará o incumbent */
   if (zheur < zstar) {
-
-    printf("..Heurística Primal melhorou a solução\n");
+    
+    //    printf("..Heurística Primal melhorou a solução (%.3lf -> %.3lf\n",zstar,zheur);
 
     for(int i=0;i<n;i++) {
       xstar[i]=xheur[i];
@@ -491,11 +501,12 @@ void CuttingPlanes::HeuristicaPrimal(int node) {
     NODE_BEST_INTEGER_SOL=node;
 
     /* informa xpress sobre novo incumbent */
-#warning FIXME: Soma 1.0 mesmo?
+    ImprimeSol(xstar,n,false);
+
     xpress_ret=XPRSsetdblcontrol(prob,XPRS_MIPABSCUTOFF,zheur-EPSILON);
     if (xpress_ret)
       errormsg("Heuristica Primal: Erro \n",__LINE__,xpress_ret);
-  } else printf("..Heurística Primal não melhorou a solução\n");
+  } else 1; // printf("..Heurística Primal não melhorou a solução\n");
 }
 
 bool CuttingPlanes::CorteExato(int node, double *x, int& ncuts, int** mtype,

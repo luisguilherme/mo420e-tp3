@@ -43,7 +43,7 @@ void StabInstance::loadFrom(FILE* fp) {
   }
   fscanf(fp," EOF");
 
-  cost_graph = gr_creategraph(n, (n*(n-1))/2);
+  cost_graph = gr_creategraph(n, m);
 
   /* constrói o grafo */
   for (int i = 0; i < n; i++) {

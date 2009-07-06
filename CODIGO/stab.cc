@@ -121,40 +121,39 @@ double Stab::heurPrimal(std::vector<double>& in, std::vector<double>& out) {
 }
 
 bool Stab::heurCuts(std::vector<double>& xsol, int& ncuts, int** mtype, char** qrtype, double** drhs, int** mstart, int** mcols, double** dmatval) {
-  /* Cria corte simples que viola restrição (6):
+  /* Cria corte simples que viola restrição (3):
      Para cada aresta de valor maior que 0.5 e menor que 1.0:
-       Cria um S composto de i e j.
-       Cria corte somando o x de todas as arestas saindo de i e de j diferentes de ij sendo maior que 1.
+       Procura S composto por ij e mais um k cujo ciclo tenha tamanho maior que 1
+       Cria corte que impede S.
   */
 
   int dim = sz(xsol);
   int nelem = 0;
   std::vector<std::vector<double> > cuts;
-
+  
   ncuts = 0;
 
   for(int i=0,e=0;i<n;i++) {
     for(int j=i+1;j<n;j++,e++) {
       if (xsol[e] > 0.5 + EPSILON  && xsol[e] < 1 - EPSILON) {
-	cuts.pb(std::vector<double>(dim,0));
-	ncuts++;
-	for(int ni=0,ne=0;ni<n;ni++)
-	  for(int nj=ni+1;nj<n;nj++,ne++)
-	    /* Se é uma aresta saindo de i ou saindo de j, mas não é i -- j,
-	       ela faz parte do corte */
-	    if ((ni != i || nj != j) &&
-		(ni == i || ni == j || nj == i || nj == j)) {
-	      cuts[ncuts-1][ne] = 1.0;
-	      nelem++;
-	    } // end if
-
+	for(int k=0;k<n;k++) {
+	  if (k == i || k == j) continue;
+	  int e1 = ijtoe(std::min(i,k),std::max(i,k),n);
+	  int e2 = ijtoe(std::min(j,k),std::max(j,k),n);
+	  if (xsol[e] + xsol[e1] + xsol[e2] > 1+EPSILON) {
+	    cuts.pb(std::vector<double>(dim,0));
+	    cuts[ncuts][e] = 1; cuts[ncuts][e1] = 1; cuts[ncuts][e2] = 1;
+	    ncuts++;
+	  }
+	} // end k
       } //end i
     } // end j
   }
 
+  nelem = 3*ncuts;
   if (ncuts == 0)
     return false;
-
+  
   *mtype = (int*) calloc(ncuts,sizeof(int));
   *qrtype = (char*) calloc(ncuts,sizeof(char));
   *drhs = (double*) calloc(ncuts,sizeof(double));
@@ -169,7 +168,7 @@ bool Stab::heurCuts(std::vector<double>& xsol, int& ncuts, int** mtype, char** q
     (*mstart)[cut] = nc;
 
     (*mtype)[cut] = 2; //Corte heurístico
-    (*qrtype)[cut] = 'G';
+    (*qrtype)[cut] = 'L';
     (*drhs)[cut] = 1;
 
     for(int col=0;col<dim;col++) {
