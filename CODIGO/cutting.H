@@ -17,7 +17,7 @@ class CuttingPlanes {
   double *rhs, *obj, *dlb, *dub, melhor_limitante_dual;
 
 public:
-  CuttingPlanes(IntegerProgram &ip, bool hp, bool bnc);
+  CuttingPlanes(IntegerProgram &ip, bool hp, bool bnc, int mndfs);
   void HeuristicaPrimal(int node);
   bool CorteExato(int node, double *x, int& ncuts, int** mtype, char** qrtype, double** drhs, int** mstart, int** mcols, double** dmatval);
   int nvars() { return ip.getncols(); }
