@@ -3,7 +3,7 @@
 
 class Stab : public IntegerProgram {
   int n;
-  std::vector<std::vector<bool> > interM;
+
   StabInstance instance;
 
   bool intersect(ii a, ii b);
