@@ -19,6 +19,7 @@ class CuttingPlanes {
 public:
   CuttingPlanes(IntegerProgram &ip, bool hp, bool bnc);
   void HeuristicaPrimal(int node);
+  bool CorteExato(int node, double *x, int& ncuts, int** mtype, char** qrtype, double** drhs, int** mstart, int** mcols, double** dmatval);
   int nvars() { return ip.getncols(); }
   bool solve();
 

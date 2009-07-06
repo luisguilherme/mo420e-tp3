@@ -9,6 +9,7 @@ void StabInstance::loadFrom(FILE* fp) {
   fscanf(fp," DIMENSION : %d",&n);
   fscanf(fp," EDGE_WEIGHT_TYPE : EUC_2D");
   fscanf(fp," NODE_COORD_SECTION");
+
   nome = std::string(name);
   for(int i=0;i<n;i++) {
     int ind;
@@ -17,6 +18,7 @@ void StabInstance::loadFrom(FILE* fp) {
     assert( i == ind - 1 );
     ponto.pb(std::make_pair(x,y));
   }
+
   nintersections = std::vector<int>((n*(n-1))/2);
   fscanf(fp," %*[^\n]");
   for(int i=0,e=0;i<n;i++) {
@@ -34,10 +36,22 @@ void StabInstance::loadFrom(FILE* fp) {
     }
   }
   fscanf(fp," EOF");
-  
-  cost_graph = gr_creategraph(n,(n*(n-1))/2);
 
+  cost_graph = gr_creategraph(n, (n*(n-1))/2);
+
+  /* constrói o grafo */
+  for (int i = 0; i < n; i++) {
+    sprintf(name, "%d", i);
+    gr_insertvertex(cost_graph, name);
+  }
+
+  for (int i = 0; i < n; i++)
+    for (int j = i+1; j < n; j++) {
+      sprintf(name, "%d-%d", i, j);
+      gr_insertedge(cost_graph, name, i, j, 1.0);
+    }
 }
+
 StabInstance::~StabInstance() {
   gr_closegraph(cost_graph);
 }

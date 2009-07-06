@@ -13,6 +13,7 @@ public:
   virtual Instance& getInstance() { return instance; }
   virtual int getncols() { return ncols; }
   virtual int getnrows() { return nrows; }
+  virtual bool isfeasible(double *x) { return false; }
   // virtual std::vector<double>& getcost() { return cost; }
   virtual void getParam(int&,int&,char**,double**,double**,int**,int**,
 			double**,double**,double**,int&,char**,int**,bool&) { }
