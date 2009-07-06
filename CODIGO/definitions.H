@@ -17,4 +17,23 @@
 
 #include <algorithm>
 
+typedef std::pair<int,int> ii;
+
+inline int ijtoe(int i, int j, int n) {
+  int e = 0;
+  for(int k=0;k<i;k++) e += n-1-k;
+  e += j-i-1;
+  return(e);
+}
+inline ii etoij(int e, int n) {
+  int i = 0, j;
+  for(int k=0;e >= 0;k++) {
+    i = k;
+    e -= n-k-1;
+  }
+  j = e + n;
+  return(std::make_pair(i,j));
+}
+
+
 #endif

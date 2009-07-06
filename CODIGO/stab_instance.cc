@@ -3,6 +3,7 @@
 
 void StabInstance::loadFrom(FILE* fp) {
   char name[255];
+  int m;
   fscanf(fp," NAME : %[^\n]",name);
   fscanf(fp," %*s %*[^\n]");
   fscanf(fp," %*s %*[^\n]");
@@ -19,7 +20,10 @@ void StabInstance::loadFrom(FILE* fp) {
     ponto.pb(std::make_pair(x,y));
   }
 
-  nintersections = std::vector<int>((n*(n-1))/2);
+  m = (n*(n-1))/2;
+
+  interM = std::vector<std::vector<bool> >(m);
+  nintersections = std::vector<int>(m);
   fscanf(fp," %*[^\n]");
   for(int i=0,e=0;i<n;i++) {
     for(int j=i+1;j<n;j++,e++) {
@@ -28,16 +32,18 @@ void StabInstance::loadFrom(FILE* fp) {
       fscanf(fp," %d %d %d", &pi, &pj, &k);
       assert(pi == i+1 && pj == j+1);
       nintersections[e] = k;
+      interM[e] = std::vector<bool>(m,false);
       pt = ii(i,j);
       for(int r=0;r<k;r++) {
 	fscanf(fp," %d %d",&pi, &pj);
-	intersection[pt].insert(ii(pi-1,pj-1));
+	interM[e][ijtoe(pi,pj,n)] = 1;
+	//intersection[pt].insert(ii(pi-1,pj-1));
       }
     }
   }
   fscanf(fp," EOF");
 
-  cost_graph = gr_creategraph(n, (n*(n-1))/2);
+  cost_graph = gr_creategraph(n, m);
 
   /* constrói o grafo */
   for (int i = 0; i < n; i++) {

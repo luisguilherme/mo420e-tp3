@@ -20,7 +20,7 @@ void showUsage() {
 int main(int argc, char* argv[]) {
   bool hp = false, bnc = false;
 
-  if (argc != 4) {
+  if (argc < 4) {
     showUsage();
     return 0;
   }

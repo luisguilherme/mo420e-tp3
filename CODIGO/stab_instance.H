@@ -15,7 +15,6 @@
 // extern gr_outputtype gr_output;
 
 typedef std::pair<double,double> point;
-typedef std::pair<int,int> ii;
 typedef std::pair<ii,ii> inter;
 
 class StabInstance : public Instance {
@@ -25,6 +24,7 @@ public:
   std::string nome;
   std::vector<point> ponto;
   std::map<ii,std::set<ii> > intersection;
+  std::vector<std::vector<bool> > interM;
   std::vector<int> nintersections;
   /* talvez saia daqui e vá para o stab.H */
   graphtype *cost_graph;
