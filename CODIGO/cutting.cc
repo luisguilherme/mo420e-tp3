@@ -460,6 +460,7 @@ int XPRS_CC Cortes(XPRSprob prob, void* classe)
     itersep=0; ret=0; /* vai parar de buscar cortes neste nó */
   }
 
+  return ret;
   return 0;
 }
 
