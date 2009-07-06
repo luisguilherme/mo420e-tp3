@@ -269,43 +269,44 @@ bool Stab::exactCuts(std::vector<double>& xsol,int& ncuts, int** mtype, char** q
 	      nelem++;
 	    }
 	  }
-	  //printf("  %d está em S\n", i);
+	  //printf("  %d", i+1);
 	}
       //printf("peso no original: %lf\n", peso);
+      printf("\n");
       ncuts++;
     }
 
-    if (ncomp2 % 2) {
-      cuts.push_back(std::vector<double>(n, 0.0));
-      double peso = 0.0;
-      for (int i = 0; i < sz(marked); i++)
-	if (!marked[i]) {
-	  int u = gr_getvertexindex(graph,
-				    gr_vertexname(tree, i));
+    // if (ncomp2 % 2) {
+    //   cuts.push_back(std::vector<double>(n, 0.0));
+    //   double peso = 0.0;
+    //   for (int i = 0; i < sz(marked); i++)
+    // 	if (!marked[i]) {
+    // 	  int u = gr_getvertexindex(graph,
+    // 				    gr_vertexname(tree, i));
 
-	  for (int f = gr_getvertexfirstadj(graph, u);
-	       gr_existsedge(graph, f); f = gr_getvertexnextadj(graph, u, f)) {
+    // 	  for (int f = gr_getvertexfirstadj(graph, u);
+    // 	       gr_existsedge(graph, f); f = gr_getvertexnextadj(graph, u, f)) {
 
-	    if((gr_getedgehead(graph, f) == u &&
-		marked[gr_getvertexindex(tree,
-					  gr_vertexname(graph,
-							gr_getedgetail(graph, f)))]) ||
-	       (gr_getedgetail(graph, f) == u &&
-		marked[gr_getvertexindex(tree,
-					  gr_vertexname(graph,
-							gr_getedgehead(graph, f)))])) {
+    // 	    if((gr_getedgehead(graph, f) == u &&
+    // 		marked[gr_getvertexindex(tree,
+    // 					  gr_vertexname(graph,
+    // 							gr_getedgetail(graph, f)))]) ||
+    // 	       (gr_getedgetail(graph, f) == u &&
+    // 		marked[gr_getvertexindex(tree,
+    // 					  gr_vertexname(graph,
+    // 							gr_getedgehead(graph, f)))])) {
 
-	      //printf("aresta do corte: %d\n", f);
-	      cuts[ncuts][f] = 1.0;
-	      peso += gr_edgeweight(graph, f);
-	      nelem++;
-	    }
-	  }
-	  //printf("  %d está em S\n", i);
-	}
-      //printf("peso no original: %lf\n", peso);
-      ncuts++;
-    }
+    // 	      //printf("aresta do corte: %d\n", f);
+    // 	      cuts[ncuts][f] = 1.0;
+    // 	      peso += gr_edgeweight(graph, f);
+    // 	      nelem++;
+    // 	    }
+    // 	  }
+    // 	  //printf("  %d está em S\n", i);
+    // 	}
+    //   //printf("peso no original: %lf\n", peso);
+    //   ncuts++;
+    // }
   }
 
   if (ncuts == 0)
