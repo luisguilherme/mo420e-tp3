@@ -150,7 +150,7 @@ bool Stab::heurCuts(std::vector<double>& xsol, int& ncuts, int** mtype, char** q
 
   for(int i=0,e=0;i<n;i++) {
     for(int j=i+1;j<n;j++,e++) {
-      if (xsol[e] > 5 + EPSILON  && xsol[e] < 1 - EPSILON) {
+      if (xsol[e] > 0.5 + EPSILON  && xsol[e] < 1 - EPSILON) {
 	cuts.pb(std::vector<double>(dim,0));
 	ncuts++;
 	for(int ni=0,ne=0;ni<n;ni++)
@@ -267,7 +267,6 @@ bool Stab::exactCuts(std::vector<double>& xsol,int& ncuts, int** mtype, char** q
 	      cuts[ncuts][f] = 1.0;
 	      peso += gr_edgeweight(graph, f);
 	      nelem++;
-
 	    }
 	  }
 	  //printf("  %d está em S\n", i);
@@ -300,7 +299,6 @@ bool Stab::exactCuts(std::vector<double>& xsol,int& ncuts, int** mtype, char** q
 	      cuts[ncuts][f] = 1.0;
 	      peso += gr_edgeweight(graph, f);
 	      nelem++;
-
 	    }
 	  }
 	  //printf("  %d está em S\n", i);
