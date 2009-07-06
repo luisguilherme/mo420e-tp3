@@ -200,7 +200,7 @@ bool Stab::exactCuts(std::vector<double>& xsol,int& ncuts, int** mtype, char** q
      de cada componente de $T - e$, se algum delas é ímpar, encontrou um
      corte.
    */
-  int e, ncomp1, ncomp2, nelem;
+  int e, ncomp1, nelem;
   std::vector<bool> marked(gr_number_vertices(graph), false);
   std::vector<std::vector<double> > cuts;
 
@@ -211,24 +211,9 @@ bool Stab::exactCuts(std::vector<double>& xsol,int& ncuts, int** mtype, char** q
 
     for (int i = 0; i < sz(marked); i++) marked[i] = false;
     ncomp1 = nvertices(gr_getedgehead(tree, e), e, tree, marked);
-    ncomp2 = sz(marked) - ncomp1;
-
-    //printf(" numero de vertices no corte(%d): %d %d\n", e, ncomp1, ncomp2);
-    // printf(" custo do corte %lf\n", gr_edgeweight(tree, e));
-    // graphtype *scut = gr_creategraph(gr_number_vertices(graph),
-    // 				     gr_number_edges(graph));
-    // double cut_weight;
-    // gr_min_st_cut(graph,
-    // 		  gr_getvertexindex(graph,
-    // 				    gr_vertexname(tree,
-    // 					       gr_getedgehead(tree, e))),
-    // 		  gr_getvertexindex(graph,
-    // 				    gr_vertexname(tree,
-    // 						  gr_getedgetail(tree, e))),
-    // 		  scut, &cut_weight);
-    // printf(" custo do corte manual %lf\n", cut_weight);
 
     if (ncomp1 % 2) {
+      // printf("peso da aresta: %lf\n", gr_edgeweight(tree, e));
       cuts.push_back(std::vector<double>(n, 0.0));
       double peso = 0.0;
       for (int i = 0; i < sz(marked); i++)
@@ -248,47 +233,13 @@ bool Stab::exactCuts(std::vector<double>& xsol,int& ncuts, int** mtype, char** q
 					  gr_vertexname(graph,
 							gr_getedgehead(graph, f)))])) {
 
-	      //printf("aresta do corte: %d\n", f);
 	      cuts[ncuts][f] = 1.0;
 	      peso += gr_edgeweight(graph, f);
 	      nelem++;
 	    }
 	  }
-	  //printf("  %d está em S\n", i);
 	}
-      //printf("peso no original: %lf\n", peso);
-      ncuts++;
-    }
-
-    if (ncomp2 % 2) {
-      cuts.push_back(std::vector<double>(n, 0.0));
-      double peso = 0.0;
-      for (int i = 0; i < sz(marked); i++)
-	if (!marked[i]) {
-	  int u = gr_getvertexindex(graph,
-				    gr_vertexname(tree, i));
-
-	  for (int f = gr_getvertexfirstadj(graph, u);
-	       gr_existsedge(graph, f); f = gr_getvertexnextadj(graph, u, f)) {
-
-	    if((gr_getedgehead(graph, f) == u &&
-		marked[gr_getvertexindex(tree,
-					  gr_vertexname(graph,
-							gr_getedgetail(graph, f)))]) ||
-	       (gr_getedgetail(graph, f) == u &&
-		marked[gr_getvertexindex(tree,
-					  gr_vertexname(graph,
-							gr_getedgehead(graph, f)))])) {
-
-	      //printf("aresta do corte: %d\n", f);
-	      cuts[ncuts][f] = 1.0;
-	      peso += gr_edgeweight(graph, f);
-	      nelem++;
-	    }
-	  }
-	  //printf("  %d está em S\n", i);
-	}
-      //printf("peso no original: %lf\n", peso);
+      // printf("peso no original: %lf\n", peso);
       ncuts++;
     }
   }

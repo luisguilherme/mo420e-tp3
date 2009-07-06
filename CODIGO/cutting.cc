@@ -327,7 +327,7 @@ void XPRS_CC SalvaMelhorSol(XPRSprob prob, void *my_object)
      zstar=objval;
 
      /* informa xpress sobre novo incumbent */
-     xpress_ret=XPRSsetdblcontrol(prob, XPRS_MIPABSCUTOFF, zstar + 1.0 - EPSILON);
+     xpress_ret=XPRSsetdblcontrol(prob, XPRS_MIPABSCUTOFF, zstar - EPSILON);
      if (xpress_ret)
        errormsg("SalvaMelhorSol: XPRSsetdblcontrol.\n",__LINE__,xpress_ret);
 
@@ -394,7 +394,7 @@ int XPRS_CC Cortes(XPRSprob prob, void* classe)
   /* Imprime dados sobre o nó */
   printf(".Valor ótimo do LP: %12.6f\n",lpobjval);
   printf(".Solução ótima do LP:\n");
-  ImprimeSol(x,((CuttingPlanes *) classe)->nvars(), true);
+  ImprimeSol(x,((CuttingPlanes *) classe)->nvars(), false);
   printf(".Rotina de separação\n");
 
   /* guarda o valor da função objetivo no primeiro nó */
@@ -454,8 +454,10 @@ int XPRS_CC Cortes(XPRSprob prob, void* classe)
     itersep=0; ret=0; /* vai parar de buscar cortes neste nó */
   }
 
+  if (totcuts > MAX_NUM_CORTES)
+    ret = 0;
+
   return ret;
-  return 0;
 }
 
 void CuttingPlanes::HeuristicaPrimal(int node) {
