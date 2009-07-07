@@ -150,6 +150,29 @@ temos um grafo $G$ e a árvore de Gomory-Hu correspondente.
 No grafo temos marcado o corte separando os vértices $w$ e $v$ e na
 árvore, a aresta correspondente ao corte.
 
+A partir da árvore de Gomory-Hu e do teorema (T1) que garante que um dos
+cortes fundamentais determinados pela árvore é um corte ímpar mínimo,
+temos um algoritmo para realizar o corte exato:
+
+\begin{enumerate}
+  \item Para cada aresta $e$ de $T$ com $c(e) < 1$
+  \item Conte o número de vértices de uma das componentes de $T-e$
+  \item Se ímpar, desigualdade violada.
+\end{enumerate}
+
+Note que so precisa contar os vértices de uma das componentes, pois
+como para ter emparelhamento perfeito o grafo precisa ter um número
+par de vértices, a paridade das componentes é a mesma.
+
+Se pelo algoritmo acima nenhum corte for encontrado, então (pelo
+teorema T1) não há restrição do tipo \eqref{corte} violada.
+
+Analisando a complexidade do algoritmo temos que está é: $O(f(|V|,
+|E|) + |V|)$ onde $f(|V|,|E|)$ é a complexidade de se encontrar a árvore
+de Gomory-Hu, o que pode ser feita por exemplo em $O(|V|*|V|^2\sqrt(|E|))$ com
+$|V|$ aplicações do algoritmo de preflow para encontrar o corte mínimo
+\cite{schrijver2003cop}.
+
 \section{Heurísticas}
 
 Implementamos duas estratégias heurísticas, sendo uma para separação de
