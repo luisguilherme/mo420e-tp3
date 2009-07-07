@@ -367,6 +367,23 @@ Outras observações pertinentes:
        parte dos casos.
 \end{enumerate}
 
+\section{Observações finais}
+
+Preocupamo-nos em escrever um código que fosse reutilizável, isto é,
+podemos implementar classes em C++ que tratam de novos problemas, e será
+fácil encaixá-los no XPress com as opções que tivemos neste trabalho,
+implementando métodos e classes segundo certa interface padrão.
+
+Ao executar o programa, na saída padrão pode se ler o log do XPRESS e
+outras informações relevantes. Na saída de erro mostramos a evolução
+(por iteração de resolução do problema relaxado) do valor da relaxação
+linear e dos limitantes primal e dual. Essa saída foi utilizada para
+geração dos gráficos via \texttt{gnuplot}.
+
+Juntamente aos dados pedidos, apresentamos na pasta \texttt{EXTRAS}
+arquivos correspondentes às saídas padrão (\texttt{log}), de erro
+(\texttt{dat}) e o tempo (\texttt{tm}) de cada iteração. 
+
 \bibliographystyle{alpha}
 \bibliography{ra009206-044072-texto.bib}
 
