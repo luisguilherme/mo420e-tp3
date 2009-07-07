@@ -122,4 +122,35 @@ E,
 Portanto, como $x^*$ satisfaz as restrições de grau, $\sum_{e \in
   \delta (S)} \ge 1$, como queríamos.
 
+\section{Cortes Exatos}
+Os cortes exatos foram implementados de forma a gerar restrições da
+forma \eqref{corte}, isto é, o problema de separação resolvido era de
+encontrar cortes mínimos ímpares. Para isto foi utilizada a árvore de
+Gomory-Hu.
+
+Seja $G=(V,E)$ um grafo não orientado e $c$ uma função de custo
+positiva associada as arestas de $G$. Uma \emph{árvore de Gomory-Hu}
+$T=(V,F)$ é uma árvore e uma função custo associada as arestas, em que
+para cada aresta $e = uv$ de $T$, $\delta_G(U)$, com $U$ o conjunto de
+vértices de uma das componentes de $T-e$, é um u-v-corte mínimo, e o
+valor do corte é o custo da aresta $e$ em $T$. Além disso, dado dois
+vértices quaisquer $u$ e $v$ de $G$ o valor do u-v-corte mínimo é o
+custo da menor aresta no caminho de $u$ à $v$ em $T$.
+
+Na figura \ref{fig:gomoryhu} (baseada em figura de \cite{bondymurty})
+temos um grafo $G$ e a árvore de Gomory-Hu correspondente.
+
+\begin{figure}[H]
+\centering
+\includegraphics[scale=0.40]{gomoryhu.png}
+\caption{Grafo e árvore de Gomory-Hu correspondente}
+\label{fig:gomoryhu}
+\end{figure}
+
+No grafo temos marcado o corte separando os vértices $w$ e $v$ e na
+árvore, a aresta correspondente ao corte.
+
+\bibliographystyle{alpha}
+\bibliography{ra009206-044072-texto.bib}
+
 \end{document}
