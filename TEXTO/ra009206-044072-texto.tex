@@ -210,9 +210,9 @@ para $0$ ou $1$, de forma que a restrição \eqref{grau} seja satisfeita
 para todo vértice. 
 
 Inicialmente testamos o seguinte algoritmo: para cada vértice $i$ não
-emparelhado, encontre o vértice $j$ não emparelhado cuja aresta $x_ij$
+emparelhado, encontre o vértice $j$ não emparelhado cuja aresta $x_{ij}$
 tem o maior valor relaxado. Marque $i$ e $j$ como emparelhados, e
-arredonde $x_ij$ para 1. $\forall k \notin {i,j}$, $x_ik$ e $x_jk$ são
+arredonde $x_{ij}$ para 1. $\forall k \notin \{i,j\}$, $x_{ik}$ e $x_{jk}$ são
 marcados como zero. Essa heurística primal raramente melhorava a
 solução e não contribuiu para a redução do número de nós pesquisados
 pelos algoritmos de \emph{branching}. Essa heurística tem complexidade
