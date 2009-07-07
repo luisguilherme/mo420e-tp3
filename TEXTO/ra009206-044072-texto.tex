@@ -144,6 +144,9 @@ seguinte desigualdade válida para cada um deles:
 Como é simples constatar, essa desigualdade corresponde à restrição
 \eqref{exp} para um conjunto $S$ de tamanho $3$. 
 
+Para cada aresta, fazemos uma busca nos vértices. Logo, a complexidade
+da separação heurística é $O(|V||E|)$
+
 \subsection{Heurística Primal}
 
 Bons limitantes primais, como será mostrado na seção de resultados,
@@ -162,7 +165,8 @@ tem o maior valor relaxado. Marque $i$ e $j$ como emparelhados, e
 arredonde $x_ij$ para 1. $\forall k \notin {i,j}$, $x_ik$ e $x_jk$ são
 marcados como zero. Essa heurística primal raramente melhorava a
 solução e não contribuiu para a redução do número de nós pesquisados
-pelos algoritmos de \emph{branching}. 
+pelos algoritmos de \emph{branching}. Essa heurística tem complexidade
+$O(|V||E|)$ 
 
 Implementamos um algoritmo muito semelhante, mas que diferia na ordem de
 busca das arestas a serem arredondadas para valores integrais, e
@@ -171,6 +175,10 @@ as arestas decrescentemente por valor relaxado. Percorrendo-as nessa
 ordem, caso elas ligassem dois vértices $i$ e $j$ ainda não emparelhados,
 arredondava-se seu valor para $1$, $i$ e $j$ eram marcados como
 emparelhados. Caso contrário, seu valor era marcado como $0$. 
+
+Nesse algoritmo ordenamos as arestas e depois percorremo-nas executando
+operações triviais. A ordenação domina a computação dessa heurística e,
+portanto, sua complexidade é dada por $O(|E| log (|E|))$.
 
 
 \end{document}
