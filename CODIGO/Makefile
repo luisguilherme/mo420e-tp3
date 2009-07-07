@@ -14,14 +14,12 @@ all: bnc
 .cc.o:
 	$(CXX) $(CFLAGS) $< -c -o $@
 
-bnc: $(sources) $(objects) $(headers) ugraph
+bnc: $(sources) $(objects) $(headers)
+	(cd ugraph ; ./build)
 	$(CXX) $(CFLAGS) $(objects) -o $@ $(LDFLAGS)
 
 prebnc: $(objects) $(headers)
 	$(CXX) $(CFLAGS) $(objects) $(LIBS) -o $@ -lugraph -lmyutil
-
-ugraph:
-	(cd ugraph ; ./build)
 
 .PHONY: clean
 clean: 
