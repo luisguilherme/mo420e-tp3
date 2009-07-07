@@ -28,7 +28,7 @@ usamo-la para resolver o problema de \emph{minimum stabbing number}
 A seguinte formulação para o problema STAB foi utilizada.
 
 \begin{align}
-  min & \hspace{8pt}y\\
+ min & \hspace{8pt}y\\
   s.a & \hspace{2pt}\sum_{e \in \delta (i)}{x_e} = 1 \label{grau} \\
       & \sum_{e \in E(S)}{x_e} \le (|S|-1)/2, \hspace{4pt} \forall S
   \subset P, \hspace{4pt} |S|
@@ -64,7 +64,7 @@ satisfeita na igualdade.
 
 \begin{figure}[H]
 \centering
-\includegraphics[scale=0.50]{ciclos.png}
+\includegraphics[scale=0.50]{ciclos}
 \caption{Solução inválida do emparelhamento satisfazendo as restrições
   de grau}
 \label{fig:ciclo_impar}
@@ -149,6 +149,63 @@ temos um grafo $G$ e a árvore de Gomory-Hu correspondente.
 
 No grafo temos marcado o corte separando os vértices $w$ e $v$ e na
 árvore, a aresta correspondente ao corte.
+
+\section{Heurísticas}
+
+Implementamos duas estratégias heurísticas, sendo uma para separação de
+cortes e outra para encontrar limitantes primais. 
+
+\subsection{Heurística de Separação de Cortes}
+
+Baseado na restrição \eqref{exp}, podemos encontrar desigualdades
+violadas de maneira simples, e executamos o seguinte algoritmo: para
+toda aresta $e$, ligando os vértices $i$ e $j$, de valor relaxado \( 0,5
+< x_e < 1 \), verificamos se existem vértices $k$ tais que \( x_{ij} +
+x_{ik} + x_{jk} > 1 \). Caso encontremos esses ciclos, adicionamos a
+seguinte desigualdade válida para cada um deles: 
+
+\begin{equation}
+ x_{ij} + x_{ik} + x_{jk} \leq 1
+\end{equation}
+
+Como é simples constatar, essa desigualdade corresponde à restrição
+\eqref{exp} para um conjunto $S$ de tamanho $3$. 
+
+Para cada aresta, fazemos uma busca nos vértices. Logo, a complexidade
+da separação heurística é $O(|V||E|)$
+
+\subsection{Heurística Primal}
+
+Bons limitantes primais, como será mostrado na seção de resultados,
+ajudam sobremaneira na resolução de problemas difíceis, principalmente
+quando se usam estratégias de \emph{branching}.
+
+Dada uma solução da relaxação linear $x^*$, podemos encontrar um
+emparelhamento perfeito da seguinte forma (e, portanto, uma solução
+viável para o STAB): para cada aresta $x^*_e$, arrendondamos o seu valor
+para $0$ ou $1$, de forma que a restrição \eqref{grau} seja satisfeita
+para todo vértice. 
+
+Inicialmente testamos o seguinte algoritmo: para cada vértice $i$ não
+emparelhado, encontre o vértice $j$ não emparelhado cuja aresta $x_ij$
+tem o maior valor relaxado. Marque $i$ e $j$ como emparelhados, e
+arredonde $x_ij$ para 1. $\forall k \notin {i,j}$, $x_ik$ e $x_jk$ são
+marcados como zero. Essa heurística primal raramente melhorava a
+solução e não contribuiu para a redução do número de nós pesquisados
+pelos algoritmos de \emph{branching}. Essa heurística tem complexidade
+$O(|V||E|)$ 
+
+Implementamos um algoritmo muito semelhante, mas que diferia na ordem de
+busca das arestas a serem arredondadas para valores integrais, e
+obtivemos resultados incrivelmente superiores. Inicialmente, ordenamos
+as arestas decrescentemente por valor relaxado. Percorrendo-as nessa
+ordem, caso elas ligassem dois vértices $i$ e $j$ ainda não emparelhados,
+arredondava-se seu valor para $1$, $i$ e $j$ eram marcados como
+emparelhados. Caso contrário, seu valor era marcado como $0$. 
+
+Nesse algoritmo ordenamos as arestas e depois percorremo-nas executando
+operações triviais. A ordenação domina a computação dessa heurística e,
+portanto, sua complexidade é dada por $O(|E| log (|E|))$.
 
 \bibliographystyle{alpha}
 \bibliography{ra009206-044072-texto.bib}
