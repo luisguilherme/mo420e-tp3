@@ -40,13 +40,17 @@ double zstar;
 double *x;
 /* - diz se usara ou nao a heuristica primal */
 bool HEURISTICA_PRIMAL;
+/* - diz se usara ou nao a heuristica separação ou não */
+bool SEP_HEURISTICA;
 /* - diz se usara ou nao cortes */
-bool BRANCH_AND_CUT;
+int BRANCH_AND_CUT;
 /* - nó onde encontrou a melhor solucao inteira */
 int NODE_BEST_INTEGER_SOL;
 /* estrutura do XPRESS contendo o problema */
 XPRSprob prob;
 /* contador do total de cortes por nó da arvore B&B */
+int totcuts_heur;
+int totcuts_ext;
 int totcuts;
 /* contador do total de nós explorados B&B */
 int totnodes;
@@ -68,18 +72,29 @@ void errormsg(const char *sSubName,int nLineNo,int nErrCode);
 void ImprimeSol(double *x, int n, bool imprime = false);
 void HeuristicaPrimal(int node);
 
-CuttingPlanes::CuttingPlanes(IntegerProgram &ip, bool hp, bool bnc, int mndfs = 10000) : ip(ip) {
-    bool relaxed;
-
+CuttingPlanes::CuttingPlanes(IntegerProgram &ip, bool hp, int bnc, bool sep, int tle, FILE *est, FILE *sol) : ip(ip) {
     // FIXME: colocar em IntegerProgram
     char probname[] = "stab";
 
+    // inicializa arquivos de saida
+    arq_est = est;
+    arq_sol = sol;
+
     /* inicializa valores de variaveis globais */
-    HEURISTICA_PRIMAL = hp; BRANCH_AND_CUT = bnc;
-    totcuts=0; totnodes = 0; itersep=0; zstar=XPRS_PLUSINFINITY;
-    MAX_NODE_DEPTH_FOR_SEP = mndfs;
+    HEURISTICA_PRIMAL = hp;
+    BRANCH_AND_CUT = bnc;
+    SEP_HEURISTICA = sep;
+
+    totcuts = totcuts_ext = totcuts_heur = 0;
+    totnodes = 0;
+    itersep=0;
+
+    zstar=XPRS_PLUSINFINITY;
+
+    MAX_NODE_DEPTH_FOR_SEP = 2;
     NODE_BEST_INTEGER_SOL = -1;
 
+    bool relaxed;
     ip.getParam(n, m, &qrtype, &rhs, &obj, &mstart, &mrwind,
 		&dmatval, &dlb, &dub, n, &qgtype, &mgcols, relaxed);
 
@@ -95,8 +110,14 @@ CuttingPlanes::CuttingPlanes(IntegerProgram &ip, bool hp, bool bnc, int mndfs = 
     /* Atribui valores a vários parametros de controle do XPRESS                */
     /* ======================================================================== */
 
+    /* limita nos explorados, se bnc == 1 planos de corte puro */
+    if (bnc == 1) {
+      xpress_ret=XPRSsetintcontrol(prob, XPRS_MAXNODE, 1);
+      if (xpress_ret) errormsg("Main: Erro ao tentar setar o XPRS_MAXNODE.\n",__LINE__,xpress_ret);
+    }
+
     /* limita o tempo de execucao */
-    xpress_ret=XPRSsetintcontrol(prob,XPRS_MAXTIME,MAX_CPU_TIME);
+    xpress_ret=XPRSsetintcontrol(prob, XPRS_MAXTIME, tle);
     if (xpress_ret) errormsg("Main: Erro ao tentar setar o XPRS_MAXTIME.\n",__LINE__,xpress_ret);
 
     /* aloca  espaço extra de  linhas para inserção de  cortes. CUIDADO:
@@ -129,7 +150,7 @@ CuttingPlanes::CuttingPlanes(IntegerProgram &ip, bool hp, bool bnc, int mndfs = 
     xpress_ret=XPRSsetintcontrol(prob,XPRS_PRESOLVE,0);
     if (xpress_ret) errormsg("Main: Erro ao desabilitar o presolve.",__LINE__,xpress_ret);
 }
-bool CuttingPlanes::solve() {
+bool CuttingPlanes::solve(std::vector<double>& xsol) {
   /* impressão para conferência */
   if (HEURISTICA_PRIMAL) printf("*** Heurística Primal será usada\n");
   
@@ -137,8 +158,11 @@ bool CuttingPlanes::solve() {
   xpress_ret=XPRSsetcbcutmgr(prob, Cortes, this);
   
   if (BRANCH_AND_CUT) {
+     printf("*** Algoritmo de branch-and-cut.\n");
 
-    printf("*** Algoritmo de branch-and-cut.\n");
+     if (SEP_HEURISTICA)
+       printf("*** Usando separação heurística.\n");
+
     /*  aloca  espaco  para  as  estruturas que  serao  usadas  para
      * armazenar  os cortes  encontrados na separacao.   Para evitar
      * perda de tempo, estas  estruturas sao alocadas uma unica vez.
@@ -183,6 +207,7 @@ bool CuttingPlanes::solve() {
 	errormsg("Main: rotina XPRSsetcbcutmgr.\n",__LINE__,xpress_ret);
     }
   }
+
   /* Desabilita a separacao de cortes do XPRESS. */
   xpress_ret=XPRSsetintcontrol(prob,XPRS_CUTSTRATEGY,0);
   if (xpress_ret)
@@ -192,7 +217,6 @@ bool CuttingPlanes::solve() {
   xpress_ret=XPRSsetintcontrol(prob,XPRS_HEURSTRATEGY,0);
   if (xpress_ret)
     errormsg("Main: Erro ao tentar setar o XPRS_HEURSTRATEGY.\n",__LINE__,xpress_ret);
-
 
   /* callback para salvar a melhor solucao inteira encontrada */
   xpress_ret=XPRSsetcbintsol(prob, SalvaMelhorSol, NULL);
@@ -231,6 +255,9 @@ bool CuttingPlanes::solve() {
     ImprimeSol(xstar, n, true);
   } else  printf("Main: programa terminou sem achar solucao inteira !\n");
 
+  for (int i = 0; i < n; i++)
+    xsol[i] = xstar[i];
+
   /* impressao de estatisticas */
   printf("********************\n");
   printf("Estatisticas finais:\n");
@@ -256,6 +283,17 @@ bool CuttingPlanes::solve() {
   if (melhor_limitante_dual > zstar+EPSILON)
     melhor_limitante_dual=zstar;
   printf(".melhor limitante dual ............ = %.6f\n",melhor_limitante_dual);
+
+  /* estatísticas no arquivo de saida */
+  fprintf(arq_est, "%c\n", BRANCH_AND_CUT == 0 ? 'b' : BRANCH_AND_CUT == 1 ? 'r' : 'f');
+  fprintf(arq_est, "%d\n", totcuts_ext);
+  fprintf(arq_est, "%d\n", totcuts_heur);
+  fprintf(arq_est, "%lf\n", objval_relax);
+  fprintf(arq_est, "%lf\n", objval_node1);
+  fprintf(arq_est, "%d\n", totnodes);
+  fprintf(arq_est, "%d\n", NODE_BEST_INTEGER_SOL);
+  fprintf(arq_est, "%d\n", (int)(zstar+0.5));
+  fprintf(arq_est, "%lf\n", melhor_limitante_dual);
 
   /* libera a memoria usada pelo problema */
   xpress_ret=XPRSdestroyprob(prob);
@@ -285,7 +323,7 @@ bool CuttingPlanes::solve() {
  */
 void XPRS_CC SalvaMelhorSol(XPRSprob prob, void *my_object)
 {
-   int i, cols, peso_aux=0, node;
+   int i, cols, node;
    double objval;
    bool viavel;
 
@@ -369,7 +407,6 @@ int XPRS_CC Cortes(XPRSprob prob, void* classe)
 
   fprintf(stderr,"%d\t%12.6lf\t%12.6lf\t%12.6lf\n",node,lpobjval,zstar,melhor_limitante_dual);
   
-
   /* se for B&B puro e não usar Heurística Primal, não faz nada */
   if ((!BRANCH_AND_CUT) && (!HEURISTICA_PRIMAL)) return 0;
 
@@ -418,7 +455,7 @@ int XPRS_CC Cortes(XPRSprob prob, void* classe)
 
   /*  sai  fora se  a  profundidade do  nó  corrente  for maior  que
    * MAX_NODE_DEPTH_FOR_SEP. */
-  xpress_ret=XPRSgetintattrib(prob,XPRS_NODEDEPTH,&node_depth);
+  xpress_ret=XPRSgetintattrib(prob, XPRS_NODEDEPTH, &node_depth);
   if (xpress_ret)
      errormsg("Cortes: erro na chamada da rotina XPRSgetintattrib.\n",__LINE__,xpress_ret);
   //  printf(".Node Depth: %d\n", node_depth);
@@ -428,10 +465,10 @@ int XPRS_CC Cortes(XPRSprob prob, void* classe)
   int ncuts, *mtype, *mstart, *mcols;
   double *drhs, *dmatval;
   char *qrtype;
-  bool encontrou = ((CuttingPlanes *)classe)->CorteExato(node, x, ncuts,
-							 &mtype, &qrtype,
-							 &drhs, &mstart,
-							 &mcols, &dmatval);
+  bool encontrou = ((CuttingPlanes *)classe)->Corte(node, x, ncuts,
+						    &mtype, &qrtype,
+						    &drhs, &mstart,
+						    &mcols, &dmatval);
   /* Impressão do corte */
   if (encontrou) {
     //    printf("..cortes encontrados: %d\n", ncuts);
@@ -508,15 +545,28 @@ void CuttingPlanes::HeuristicaPrimal(int node) {
   } else 1; // printf("..Heurística Primal não melhorou a solução\n");
 }
 
-bool CuttingPlanes::CorteExato(int node, double *x, int& ncuts, int** mtype,
+bool CuttingPlanes::Corte(int node, double *x, int& ncuts, int** mtype,
 			       char** qrtype, double** drhs, int** mstart,
 			       int** mcols, double** dmatval) {
+  bool res = false;
+
   std::vector<double> xsol(n, 0.0);
   for(int i=0;i<n;i++) xsol[i] = x[i];
-  return ip.exactCuts(xsol, ncuts, mtype, qrtype, drhs, mstart, mcols, dmatval);
+
+  if (SEP_HEURISTICA) {
+    res = ip.heurCuts(xsol, ncuts, mtype, qrtype, drhs, mstart, mcols, dmatval);
+    totcuts_heur += ncuts;
+  }
+  
+  if (!res) {
+    res = ip.exactCuts(xsol, ncuts, mtype, qrtype, drhs, mstart, mcols, dmatval);
+    totcuts_ext += ncuts;
+  }
+  
+  return res;
 }
 
-void ImprimeSol(double *a, int n, bool imprime){
+void ImprimeSol(double *a, int n, bool imprime) {
   int i;
   if (imprime)
     for(i=0;i<n;i++)
@@ -556,4 +606,3 @@ void errormsg(const char *sSubName,int nLineNo,int nErrCode)
    XPRSfree();
    exit(nErrCode);
 }
-

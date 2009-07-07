@@ -7,34 +7,65 @@
 
 /* mensagem de uso do programa */
 void showUsage() {
-	printf ("Uso: bnc <estrategia> <prof_max_para_corte> <instancia>\n");
-        printf ("- estrategia: string de \"0\"\'s e \"1\"\'s de tamanho 2.\n");
-	printf ("  - 1a. posição é \"1\" se a heurística primal é usada. \n");
-	printf ("  - 2a. posição é \"1\" se as minhas \"cut inequalities\" forem separadas.\n");
-	printf ("    Nota: estrategia=\"00\" equivale a um Branch-and-Bound puro\n");
-	printf ("- prof_max_para_corte: maior altura de um nó para aplicar cortes\n");
-	printf ("    (default=1000000) \n");
-	printf ("- instancia: nome do arquivo contendo a instância \n");
+  printf ("Uso: bnc <tipo-exec> <time-limit> <heur-primal> <separa-heur> <arq-input>\n");
+  printf ("tipo-exec: b: branch-and-bound puro\n"
+	  "           r: planos de corte puro\n"
+          "           f: branch-and-bound completo\n"
+	  "time-limit: tempo máximo de execução em segundos\n"
+	  "heur-primal: 1 se usa heur. primal, 0 c.c\n"
+	  "separa-heur: 1 se usa heur. separacao, 0 c.c\n"
+	  "arq-input: caminho para o arquivo de entrada\n");
 }
 
 int main(int argc, char* argv[]) {
-  bool hp = false, bnc = false;
+  int timelimit = MAX_CPU_TIME, bnc = 0;
+  bool hp = false, sep = false;
 
-  if (argc < 4) {
+  if (argc < 6) {
     showUsage();
     return 0;
   }
 
-  hp = (argv[1][0] - '0') == 1;
-  bnc = (argv[1][1] - '0') == 1;
+  hp = (argv[3][0] - '0' == 1);
+  sep = (argv[4][0] - '0' == 1);
+  timelimit = atoi(argv[2]);
+
+  switch (argv[1][0]) {
+  case 'b':
+    bnc = 0;
+    break;
+  case 'r':
+    bnc = 1;
+    break;
+  case 'f':
+    bnc = 2;
+    break;
+  }
 
   StabInstance a;
-  a.loadFrom(fopen(argv[3],"r"));
+  a.loadFrom(fopen(argv[5],"r"));
+
+  FILE *sol, *est;
+  char filename[128];
+  sprintf(filename, "%s.sol", argv[5]);
+  sol = fopen(filename, "w");
+  sprintf(filename, "%s.est", argv[5]);
+  est = fopen(filename, "w");
 
   Stab s(a);
-  CuttingPlanes cp(s, hp, bnc, atoi(argv[2]));
+  CuttingPlanes cp(s, hp, bnc, sep, timelimit, est, sol);
+  std::vector<double> xstar((a.n*(a.n-1))/2, 0);
+  cp.solve(xstar);
 
-  cp.solve();
+  /* arquivo com a solução */
+  int m = (a.n*(a.n-1))/2;
+  for (int i = 0; i < m-1; i++)
+    if (xstar[i] > EPSILON)
+      fprintf(sol, "%d %d\n", etoij(i, a.n).first, etoij(i, a.n).second);
+  fprintf(sol, "%d\n", (int)xstar[m-1]);
+
+  fclose(sol);
+  fclose(est);
   
   return(0);
 }
