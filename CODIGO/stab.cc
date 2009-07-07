@@ -88,23 +88,21 @@ double Stab::heurPrimal(std::vector<double>& in, std::vector<double>& out) {
   int m = (n*(n-1))/2;
   out = std::vector<double>(m+1,0);
   std::vector<bool> paired(n,false);
-  double y = 0;
-
-  //for all vertices, pair it with the highest value
-  for(int i=0,e=0;i<n;i++) {
-    int maxp = -1;
-    int pairp, edgep;
-    if (paired[i]) continue; //evita computação inútil
-    for(int j=i+1;j<n;j++,e++) {
-      if (!paired[j] && maxp < in[e]) {
-	maxp = in[e];
-	pairp = j; edgep = e;
-      }
-    }
-    paired[i] = paired[pairp] = true;
-    out[edgep] = 1;
-
+  std::vector<std::pair<double,int> >  pp;
+  for(int e=0;e<m;e++) pp.pb(std::make_pair(in[e],e));
+  
+  sort(pp.rbegin(),pp.rend());
+  for(int ed=0;ed<m;ed++) {
+    int e = pp[ed].second;
+    ii ij = etoij(e,n);
+    int i = ij.first; int j = ij.second;
+    if (paired[i] || paired[j]) continue;
+    paired[i] = true;
+    paired[j] = true;
+    out[e] = 1.0;
   }
+
+  double y = 0;
 
   for(int i=0;i<n;i++) {
     for(int j=i+1;j<n;j++) {
