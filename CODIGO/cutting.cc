@@ -540,7 +540,7 @@ void CuttingPlanes::HeuristicaPrimal(int node) {
     /* informa xpress sobre novo incumbent */
     ImprimeSol(xstar,n,false);
 
-    xpress_ret=XPRSsetdblcontrol(prob,XPRS_MIPABSCUTOFF,zheur-EPSILON);
+    xpress_ret=XPRSsetdblcontrol(prob,XPRS_MIPABSCUTOFF,zheur-1+EPSILON);
     if (xpress_ret)
       errormsg("Heuristica Primal: Erro \n",__LINE__,xpress_ret);
   } else 1; // printf("..Heurística Primal não melhorou a solução\n");
