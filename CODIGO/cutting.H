@@ -1,6 +1,6 @@
 #include "integer_program.H"
+#include "definitions.H"
 #include "xprs.h"
-
 
 class CuttingPlanes {
   IntegerProgram &ip;
@@ -18,7 +18,7 @@ class CuttingPlanes {
   double *rhs, *obj, *dlb, *dub, melhor_limitante_dual;
 
 public:
-  CuttingPlanes(IntegerProgram &ip, bool hp, int bnc, bool sep, int tle, FILE *arq_est, FILE *arq_sol);
+  CuttingPlanes(IntegerProgram &ip, bool hp, int bnc, bool sep, int tle, FILE *arq_est, FILE *arq_sol, int total_cortes = MAX_NUM_CORTES);
   void HeuristicaPrimal(int node);
   bool Corte(int node, double *x, int& ncuts, int** mtype, char** qrtype, double** drhs, int** mstart, int** mcols, double** dmatval);
   int nvars() { return ip.getncols(); }

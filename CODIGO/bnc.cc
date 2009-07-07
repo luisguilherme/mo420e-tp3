@@ -53,7 +53,7 @@ int main(int argc, char* argv[]) {
   est = fopen(filename, "w");
 
   Stab s(a);
-  CuttingPlanes cp(s, hp, bnc, sep, timelimit, est, sol);
+  CuttingPlanes cp(s, hp, bnc, sep, timelimit, est, sol, bnc == 1 ? 5 * a.n : MAX_NUM_CORTES);
   std::vector<double> xstar((a.n*(a.n-1))/2 + 1, 0);
   cp.solve(xstar);
 

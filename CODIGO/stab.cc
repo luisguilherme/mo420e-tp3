@@ -194,8 +194,8 @@ bool Stab::exactCuts(std::vector<double>& xsol,int& ncuts, int** mtype, char** q
   gr_generate_ghc_tree(graph, tree);
 
   /* Para cada aresta da GH-T com peso < 1, conta o número de vértices
-     de cada componente de $T - e$, se algum delas é ímpar, encontrou um
-     corte.
+     de cada componente de $T - e$, se alguma delas é ímpar, encontrou um
+     corte desejado.
    */
   int e, ncomp1, nelem;
   std::vector<bool> marked(gr_number_vertices(graph), false);
@@ -228,7 +228,6 @@ bool Stab::exactCuts(std::vector<double>& xsol,int& ncuts, int** mtype, char** q
 		!marked[gr_getvertexindex(tree,
 					  gr_vertexname(graph,
 							gr_getedgehead(graph, f)))])) {
-
 	      cuts[ncuts][f] = 1.0;
 	      nelem++;
 	    }

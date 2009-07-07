@@ -74,7 +74,7 @@ void errormsg(const char *sSubName,int nLineNo,int nErrCode);
 void ImprimeSol(double *x, int n, bool imprime = false);
 void HeuristicaPrimal(int node);
 
-CuttingPlanes::CuttingPlanes(IntegerProgram &ip, bool hp, int bnc, bool sep, int tle, FILE *est, FILE *sol) : ip(ip) {
+CuttingPlanes::CuttingPlanes(IntegerProgram &ip, bool hp, int bnc, bool sep, int tle, FILE *est, FILE *sol, int total_cortes) : ip(ip) {
     // FIXME: colocar em IntegerProgram
     char probname[] = "stab";
 
@@ -90,7 +90,7 @@ CuttingPlanes::CuttingPlanes(IntegerProgram &ip, bool hp, int bnc, bool sep, int
     if (bnc != 1)
       TOT_CORTES_MAXIMO = MAX_NUM_CORTES;
     else
-      TOT_CORTES_MAXIMO = 5 * n;
+      TOT_CORTES_MAXIMO = total_cortes;
 
     totcuts = totcuts_ext = totcuts_heur = 0;
     totnodes = 0;
@@ -178,12 +178,12 @@ bool CuttingPlanes::solve(std::vector<double>& xsol) {
      * rotinas  de separacao. No  caso a rotina de  separação poderá
      *  gerar até um  "cover ineuqality"  por vez.  Ler no  manual a
      * descrição da rotina XPRSaddcuts */
-    qrtype=(char *)malloc(sizeof(char));
-    mtype=(int *) malloc(sizeof(int));
-    drhs=(double *)malloc(sizeof(double));
-    mstart=(int *)malloc((n+1)*sizeof(int));
-    mcols=(int *)malloc(n*sizeof(int));   /* cada corte tera no maximo n nao-zeros */
-    dmatval=(double *)malloc(n*sizeof(double));
+    // qrtype=(char *)malloc(sizeof(char));
+    // mtype=(int *) malloc(sizeof(int));
+    // drhs=(double *)malloc(sizeof(double));
+    // mstart=(int *)malloc((n+1)*sizeof(int));
+    // mcols=(int *)malloc(n*sizeof(int));   /* cada corte tera no maximo n nao-zeros */
+    // dmatval=(double *)malloc(n*sizeof(double));
 
     /* callback indicando que sera feita separacao de cortes em cada
        nó da arvore de B&B */
@@ -307,12 +307,12 @@ bool CuttingPlanes::solve(std::vector<double>& xsol) {
   xpress_ret=XPRSdestroyprob(prob);
 
   /* libera toda memoria usada no programa */
-  free(qrtype);
-  free(mtype);
-  free(drhs);
-  free(mstart);
-  free(mcols);
-  free(dmatval);
+  // free(qrtype);
+  // free(mtype);
+  // free(drhs);
+  // free(mstart);
+  // free(mcols);
+  // free(dmatval);
   free(x);
   free(xstar);
 
@@ -479,21 +479,18 @@ int XPRS_CC Cortes(XPRSprob prob, void* classe)
 						    &mcols, &dmatval);
   /* Impressão do corte */
   if (encontrou) {
-    //    printf("..cortes encontrados: %d\n", ncuts);
-    //printf("..corte encontrado: (viol=%12.6f)\n\n   ",1.0-ajuste_val+val);
-    // for(i=0;i<irhs;i++){
-    //   printf("x[%d] ",mcols[i]);
-    //   if (i==irhs-1)
-    // 	printf("<= %d\n\n",irhs-1);
-    //   else printf("+ ");
-    // }
+    printf("..cortes encontrados: %d\n", ncuts);
 
     /* adiciona o corte usando rotina XPRSaddcuts */
     xpress_ret=XPRSaddcuts(prob, ncuts, mtype, qrtype, drhs, mstart, mcols, dmatval);
     totcuts+=ncuts;
     if (xpress_ret)
       errormsg("Cortes: erro na chamada da rotina XPRSgetintattrib.\n",__LINE__,xpress_ret);
-  } // else printf("..corte não encontrado\n");
+
+    /* libera memoria usada pelos cortes */
+    free(mtype); free(qrtype); free(drhs); free(mstart); free(mcols); free(dmatval);
+
+  } else printf("..corte não encontrado\n");
 
   // printf("..Fim da rotina de cortes\n");
 
@@ -502,7 +499,7 @@ int XPRS_CC Cortes(XPRSprob prob, void* classe)
   if (xpress_ret)
     errormsg("Cortes: rotina XPRSwriteprob.\n", __LINE__, xpress_ret);
 
-  if ((encontrou) && (itersep < MAX_ITER_SEP)) {
+  if ((encontrou) && (itersep < MAX_ITER_SEP || BRANCH_AND_CUT == 1)) {
     itersep++; ret=1; /* continua buscando cortes neste nó */
   } else {
     itersep=0; ret=0; /* vai parar de buscar cortes neste nó */
