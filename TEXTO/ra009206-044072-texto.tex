@@ -142,7 +142,7 @@ temos um grafo $G$ e a árvore de Gomory-Hu correspondente.
 
 \begin{figure}[H]
 \centering
-\includegraphics[scale=0.40]{gomoryhu.png}
+\includegraphics[scale=0.40]{gomoryhu}
 \caption{Grafo e árvore de Gomory-Hu correspondente}
 \label{fig:gomoryhu}
 \end{figure}
@@ -206,6 +206,76 @@ emparelhados. Caso contrário, seu valor era marcado como $0$.
 Nesse algoritmo ordenamos as arestas e depois percorremo-nas executando
 operações triviais. A ordenação domina a computação dessa heurística e,
 portanto, sua complexidade é dada por $O(|E| log (|E|))$.
+
+
+\section{Tempos}
+
+Na tabela \ref{tab:tempos} há os tempos envolvidos para cada execução,
+medidos como soma de tempo de usuário e tempo de sistema no programa
+\texttt{time}. A linha de cabeçalho corresponde à forma de entrada do
+programa, isto é, \textbf{b} indica \emph{branch and bound} puro,
+\textbf{r} indica o algoritmo planos de corte, e \textbf{f} indica o
+algoritmo de \emph{branch and cut}, executado com profundidade máxima
+para cortes de $2$. Os dois dígitos indicam se houve uso
+de heurísticas, $1$ indica que houve, e $0$ o contrário. O primeiro
+dígito indica o uso da heurística primal,  e o segundo dígito da
+heurística de geração de cortes. Em negrito, os valores em que não foi
+possível encontrar solução inteira (não coincidentemente, justamente os
+casos de algoritmo de plano de cortes puro sem heurística primal).
+
+
+
+\begin{table}[htb]
+\begin{tiny}
+\centering
+\begin{tabular}[b]{|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+& b00 & b10 & r00 & r01 & r10 & r11 & f00 & f01 & f10 & f11 \\ \hline
+eil76\_66 & 25.03 & 26.16 & \textbf{38.16} & \textbf{34.4} & 38.9 & 35.23 & 111.81 & 93.42 & 67.11 & 95.94 \\ \hline
+kroC100\_70 & 28.55 & 23.4 & \textbf{26.42} & \textbf{29.78} & 26.77 & 29.74 & 94.62 & 108.71 & 80.17 & 107.47 \\ \hline
+kroB100\_60 & 37.73 & 13.03 & \textbf{22.88} & \textbf{18.58} & 23.23 & 18.7 & 185.72 & 91.59 & 370.71 & 104.05 \\ \hline
+brd14051\_60 & 34.91 & 11.61 & \textbf{15.29} & \textbf{20.06} & 15.55 & 20.45 & 65.48 & 60.95 & 42.4 & 50.96 \\ \hline
+gil262\_70 & 72.24 & 23.33 & \textbf{108.17} & \textbf{62.44} & 111.8 & 63.32 & 119.76 & 168.53 & 89.96 & 125.07 \\ \hline
+kroB100\_70 & 84.21 & 110.06 & \textbf{34.99} & \textbf{31.12} & 35.63 & 31.46 & 301.14 & 276.51 & 177.77 & 204.11 \\ \hline
+eil51\_50 & 11.58 & 4.94 & \textbf{7.21} & \textbf{10.22} & 6.9 & 10.4 & 34.25 & 22.48 & 15.64 & 15.0 \\ \hline
+lin105\_60 & 8.64 & 10.77 & \textbf{9.43} & \textbf{9.09} & 9.5 & 9.2 & 63.39 & 82.48 & 37.16 & 16.38 \\ \hline
+gil262\_60 & 16.12 & 7.62 & \textbf{22.55} & \textbf{25.17} & 22.81 & 25.55 & 53.84 & 82.39 & 18.33 & 13.6 \\ \hline
+kroA100\_50 & 11.93 & 3.68 & \textbf{6.0} & \textbf{5.67} & 4.6 & 5.7 & 22.55 & 26.89 & 4.6 & 9.01 \\ \hline
+brd14051\_70 & 23.5 & 24.57 & \textbf{81.98} & \textbf{29.41} & 83.44 & 29.73 & 124.66 & 87.04 & 88.74 & 90.42 \\ \hline
+bier127\_60 & 15.53 & 6.51 & \textbf{54.56} & \textbf{47.17} & 17.14 & 22.51 & 75.25 & 62.3 & 11.86 & 11.63 \\ \hline
+\end{tabular}
+\end{tiny}
+\caption{Tempos de execução para as instâncias sugeridas}
+\label{tab:tempos}
+\end{table}
+
+Além da impossibilidade do algoritmo de planos de corte puro conseguir
+encontrar uma solução viável sem o uso de heurística primal, podemos
+observar que:
+
+\begin{enumerate}
+ \item Na maioria dos casos, o uso da heurística primal reduz
+       sensivelmente o tempo de execução. Um contra exemplo é o
+       algoritmo de \emph{branch and cut} para a instância
+       kroB100\_60. O contrário pode ser observado em quase todos os
+       outros casos, com destaque para a instância bier127\_60, que teve
+       o tempo reduzido em um sexto. 
+ \item O uso da heurística para encontrar planos de cortes não dá
+       melhoras consistentes no tempo de exceção, com algumas honrosas
+       exceções, como no plano de cortes puro para o brd14051\_70 e no
+       \emph{branch and cut} para o kroB100\_60.
+ \item Infelizmente, os melhores tempos de execução são quase sempre
+       obtidos com o algoritmo de \emph{branch and bound} puro. O uso da
+       heurística primal em geral melhora ainda mais esse tempo. O uso
+       de estruturas de dados adequadas e uma implementação mais enxuta
+       do XPRESS em comparação com o código de laboratório pode explicar
+       em parte esse dado. Outra possibilidade é uma implementação
+       imperfeita dos algoritmos. Ainda elencamos o fato de nossa
+       heurística de separação não ser tão eficiente, e o algoritmo
+       exato ter uma complexidade ruim, ainda que polinomial, o que
+       contribui para delongar as execuções que realizam separação por
+       cortes. 
+\end{enumerate} 
 
 \bibliographystyle{alpha}
 \bibliography{ra009206-044072-texto.bib}
