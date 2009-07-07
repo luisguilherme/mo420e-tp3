@@ -46,7 +46,7 @@ exatamente uma aresta incidente nele tem o valor $x_e = 1$. As do tipo
 do emparelhamento, ao se resolver o programa linear relaxado
 correspondente elas evitam soluções com valores fracionários como na
 figura \ref{fig:ciclo_impar}, e mais, são necessárias na descrição da
-envoltória convexa [REFERÊNCIA DO ARTIGO AQUI].
+envoltória convexa \cite{grotschel1985smp}.
 
 Intuitivamente essas restrições dizem que para todo conjunto ímpar de
 vértices, deve exister algum vértice ``casando'' com alguem de fora do
@@ -95,7 +95,7 @@ Para o conjunto $S$,
 
 \begin{align}
   \sum_{e \in \delta (S)}x_e^* = \sum_{i \in S}\sum_{e \in \delta
-    (i)}x_e^* - 2\sum_{e \in E(S)}x_e^* < \sum_{i \in S}\sum_{e in
+    (i)}x_e^* - 2\sum_{e \in E(S)}x_e^* < \sum_{i \in S}\sum_{e \in
     \delta (i)}x_e^* - (|S| - 1)
 \end{align}
 
@@ -284,7 +284,7 @@ observar que:
        outros casos, com destaque para a instância bier127\_60, que teve
        o tempo reduzido em um sexto. 
  \item O uso da heurística para encontrar planos de cortes não dá
-       melhoras consistentes no tempo de exceção, com algumas honrosas
+       melhoras consistentes no tempo de execução, com algumas honrosas
        exceções, como no plano de cortes puro para o brd14051\_70 e no
        \emph{branch and cut} para o kroB100\_60.
  \item Infelizmente, os melhores tempos de execução são quase sempre
@@ -298,7 +298,7 @@ observar que:
        exato ter uma complexidade ruim, ainda que polinomial, o que
        contribui para delongar as execuções que realizam separação por
        cortes. 
-\end{enumerate} 
+\end{enumerate}
 
 \section{Outras comparações}
 
