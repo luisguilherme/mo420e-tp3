@@ -255,6 +255,7 @@ bool CuttingPlanes::solve(std::vector<double>& xsol) {
     ImprimeSol(xstar, n, true);
   } else  printf("Main: programa terminou sem achar solucao inteira !\n");
 
+  /* copia solucao para o parametro de retorno */
   for (int i = 0; i < n; i++)
     xsol[i] = xstar[i];
 

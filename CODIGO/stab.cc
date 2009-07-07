@@ -208,13 +208,12 @@ bool Stab::exactCuts(std::vector<double>& xsol,int& ncuts, int** mtype, char** q
     if (gr_edgeweight(tree, e) >= 1.0 - EPSILON)
       continue;
 
-    for (int i = 0; i < sz(marked); i++) marked[i] = false;
+    for (int i = 0; i < sz(marked); i++)
+      marked[i] = false;
     ncomp1 = nvertices(gr_getedgehead(tree, e), e, tree, marked);
 
     if (ncomp1 % 2) {
-      // printf("peso da aresta: %lf\n", gr_edgeweight(tree, e));
       cuts.push_back(std::vector<double>(n, 0.0));
-      double peso = 0.0;
       for (int i = 0; i < sz(marked); i++)
 	if (marked[i]) {
 	  int u = gr_getvertexindex(graph,
@@ -233,12 +232,10 @@ bool Stab::exactCuts(std::vector<double>& xsol,int& ncuts, int** mtype, char** q
 							gr_getedgehead(graph, f)))])) {
 
 	      cuts[ncuts][f] = 1.0;
-	      peso += gr_edgeweight(graph, f);
 	      nelem++;
 	    }
 	  }
 	}
-      // printf("peso no original: %lf\n", peso);
       ncuts++;
     }
   }

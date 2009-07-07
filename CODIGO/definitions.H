@@ -2,7 +2,7 @@
 #define __DEFINITIONS_H__
 
 #define MAX_CPU_TIME 1800
-#define MAX_NUM_CORTES 100   /* limite maximo de cortes */
+#define MAX_NUM_CORTES 256   /* limite maximo de cortes */
 #define MAX_ITER_SEP 10   /* numero maximo de iteracoes de corte por nodo */
 
 #define EPSILON 1e-6

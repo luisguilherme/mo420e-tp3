@@ -54,11 +54,11 @@ int main(int argc, char* argv[]) {
 
   Stab s(a);
   CuttingPlanes cp(s, hp, bnc, sep, timelimit, est, sol);
-  std::vector<double> xstar((a.n*(a.n-1))/2, 0);
+  std::vector<double> xstar((a.n*(a.n-1))/2 + 1, 0);
   cp.solve(xstar);
 
   /* arquivo com a solução */
-  int m = (a.n*(a.n-1))/2;
+  int m = (a.n*(a.n-1))/2 + 1;
   for (int i = 0; i < m-1; i++)
     if (xstar[i] > EPSILON)
       fprintf(sol, "%d %d\n", etoij(i, a.n).first, etoij(i, a.n).second);
