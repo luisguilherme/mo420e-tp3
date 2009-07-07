@@ -131,18 +131,18 @@ Gomory-Hu.
 Seja $G=(V,E)$ um grafo não orientado e $c$ uma função de custo
 positiva associada as arestas de $G$. Uma \emph{árvore de Gomory-Hu}
 $T=(V,F)$ é uma árvore e uma função custo associada as arestas, em que
-para cada aresta $e = uv$ de $T$, $\delta_G(U)$, com $U$ o conjunto de
-vértices de uma das componentes de $T-e$, é um u-v-corte mínimo, e o
-valor do corte é o custo da aresta $e$ em $T$. Além disso, dado dois
-vértices quaisquer $u$ e $v$ de $G$ o valor do u-v-corte mínimo é o
-custo da menor aresta no caminho de $u$ à $v$ em $T$.
+para cada aresta $e = uv$ de $T$, temos que $\delta_G(U)$, com $U$ o
+conjunto de vértices de uma das componentes de $T-e$, é um u-v-corte
+mínimo, e o valor do corte é o custo da aresta $e$ em $T$. Além disso,
+dado dois vértices quaisquer $u$ e $v$ de $G$ o valor do u-v-corte
+mínimo é o custo da menor aresta no caminho de $u$ à $v$ em $T$.
 
 Na figura \ref{fig:gomoryhu} (baseada em figura de \cite{bondymurty})
 temos um grafo $G$ e a árvore de Gomory-Hu correspondente.
 
 \begin{figure}[H]
 \centering
-\includegraphics[scale=0.40]{gomoryhu}
+\includegraphics[scale=1.0]{gomoryhu}
 \caption{Grafo e árvore de Gomory-Hu correspondente}
 \label{fig:gomoryhu}
 \end{figure}
