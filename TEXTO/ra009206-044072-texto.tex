@@ -74,11 +74,54 @@ Note que o número de restrições do tipo \eqref{exp} é exponencial,
 portanto não é possível utilizar essa formulação com todas as
 restrições é necessário um algoritmo de \emph{branch-and-cut}
 
-Vejamos agora restrições alternativas para as do tipo \eqref{exp}.
+Vejamos agora restrições alternativas para as do tipo \eqref{exp}, que
+ao invés de somarem sobre as arestas do conjunto $S$, somam sobre as
+arestas do corte cuja praia é $S$.
 
 \begin{align}
   \sum_{e \in S}{x_e} \ge 1, \hspace{4pt}|S|\hspace{4pt} impar \label{corte}
 \end{align}
+
+Vamos mostrar que \eqref{corte} e \eqref{exp} são equivalentes.
+
+Fixe um conjunto $S$ e seja $x^*$ uma solução do problema linear acima
+que não satisfaz as restrições \eqref{exp}. Temos:
+
+\begin{align}
+  2\sum_{e \in E(S)}x_e^* > (|S| - 1)
+\end{align}
+
+Para o conjunto $S$,
+
+\begin{align}
+  \sum_{e \in \delta (S)}x_e^* = \sum_{i \in S}\sum_{e \in \delta
+    (i)}x_e^* - 2\sum_{e \in E(S)}x_e^* < \sum_{i \in S}\sum_{e in
+    \delta (i)}x_e^* - (|S| - 1)
+\end{align}
+
+Mas pelo fato de $x^*$ satisfazer as restrições de grau temos $\sum_{i
+  \in S}\sum_{e \in \delta (i)}x_e^* = |S|$, portanto, $\sum_{e \in
+  \delta (S)} < 1$, e $x^*$ não satisfaz \eqref{corte}. De maneira
+análoga obtemos que se uma solução não satisfaz \eqref{corte} não
+satisfaz \eqref{exp}.
+
+Suponha agora que $x^*$ é uma solução válida para \eqref{exp}, então:
+
+\begin{align}
+  2\sum_{e \in E(S)}x_e^* \le (|S| - 1)
+\end{align}
+
+E,
+
+\begin{align}
+  \sum_{e \in \delta (S)}x_e^* = \sum_{i \in S}\sum_{e \in \delta
+    (i)}x_e^* - 2\sum_{e \in E(S)}x_e^* \ge \sum_{i \in S}\sum_{e in
+    \delta (i)}x_e^* - (|S| - 1)
+\end{align}
+
+Portanto, como $x^*$ satisfaz as restrições de grau, $\sum_{e \in
+  \delta (S)} \ge 1$, como queríamos.
+
 
 \section{Heurísticas}
 
@@ -128,5 +171,6 @@ as arestas decrescentemente por valor relaxado. Percorrendo-as nessa
 ordem, caso elas ligassem dois vértices $i$ e $j$ ainda não emparelhados,
 arredondava-se seu valor para $1$, $i$ e $j$ eram marcados como
 emparelhados. Caso contrário, seu valor era marcado como $0$. 
+
 
 \end{document}
