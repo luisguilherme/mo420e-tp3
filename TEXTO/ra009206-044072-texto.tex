@@ -300,6 +300,34 @@ observar que:
        cortes. 
 \end{enumerate} 
 
+\section{Outras comparações}
+
+\subsection{Influência da heurística de cortes}
+
+Como podemos ver nos gráficos abaixo, os cortes heurísticos ajudaram a
+encontrar limitantes primais para o \emph{branch and cut} nos casos em
+que a heurística primal não foi utilizada. Na figura
+\ref{fig:lin105_60f} isso não foi suficiente para diminuir o número de
+iterações. Já no caso da figura \ref{fig:kroB100_60f}, o número de
+iterações foi sensivelmente reduzido.
+
+\begin{figure}[htb]
+\centering
+\includegraphics[scale=0.5]{lin105_60-f00}%
+\includegraphics[scale=0.5]{lin105_60-f01}
+\caption{Comparação do uso de cortes heurísticos: sem melhoria sensível}
+\label{fig:lin105_60f}
+\end{figure}
+
+\begin{figure}[htb]
+\centering
+\includegraphics[scale=0.5]{kroB100_60-f00}%
+\includegraphics[scale=0.5]{kroB100_60-f01}
+\caption{Comparação do uso de cortes heurísticos: com melhoria sensível}
+\label{fig:kroB100_60f}
+\end{figure}
+
+
 \bibliographystyle{alpha}
 \bibliography{ra009206-044072-texto.bib}
 
