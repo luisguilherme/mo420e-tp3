@@ -9,19 +9,21 @@ objects = stab_instance.o bnc.o stab.o cutting.o
 sources = $(objects:.o=.cc)
 
 .PHONY: all
-all: $(sources) $(headers) $(objects)
+all: bnc
 
 .cc.o:
 	$(CXX) $(CFLAGS) $< -c -o $@
 
-bnc: $(objects) $(headers)
+bnc: $(sources) $(objects) $(headers) ugraph
 	$(CXX) $(CFLAGS) $(objects) -o $@ $(LDFLAGS)
 
 prebnc: $(objects) $(headers)
 	$(CXX) $(CFLAGS) $(objects) $(LIBS) -o $@ -lugraph -lmyutil
 
+ugraph:
+	(cd ugraph ; ./build)
+
 .PHONY: clean
 clean: 
 	rm -Rf $(objects) bnc prebnc
-
-
+	(cd ugraph ; ./clean)
