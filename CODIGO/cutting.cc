@@ -46,6 +46,8 @@ bool SEP_HEURISTICA;
 int BRANCH_AND_CUT;
 /* - nó onde encontrou a melhor solucao inteira */
 int NODE_BEST_INTEGER_SOL;
+/* numero maximo de cortes */
+int TOT_CORTES_MAXIMO;
 /* estrutura do XPRESS contendo o problema */
 XPRSprob prob;
 /* contador do total de cortes por nó da arvore B&B */
@@ -85,6 +87,11 @@ CuttingPlanes::CuttingPlanes(IntegerProgram &ip, bool hp, int bnc, bool sep, int
     BRANCH_AND_CUT = bnc;
     SEP_HEURISTICA = sep;
 
+    if (bnc != 1)
+      TOT_CORTES_MAXIMO = MAX_NUM_CORTES;
+    else
+      TOT_CORTES_MAXIMO = 5 * n;
+
     totcuts = totcuts_ext = totcuts_heur = 0;
     totnodes = 0;
     itersep=0;
@@ -122,7 +129,7 @@ CuttingPlanes::CuttingPlanes(IntegerProgram &ip, bool hp, int bnc, bool sep, int
 
     /* aloca  espaço extra de  linhas para inserção de  cortes. CUIDADO:
        Isto tem que ser feito ANTES (!) de carregar o problema ! */
-    xpress_ret=XPRSsetintcontrol(prob,XPRS_EXTRAROWS,MAX_NUM_CORTES+1);
+    xpress_ret=XPRSsetintcontrol(prob,XPRS_EXTRAROWS, TOT_CORTES_MAXIMO + 1);
     if (xpress_ret)
       errormsg("Main: Erro ao tentar setar o XPRS_EXTRAROWS.\n",__LINE__,xpress_ret);
 
@@ -501,7 +508,7 @@ int XPRS_CC Cortes(XPRSprob prob, void* classe)
     itersep=0; ret=0; /* vai parar de buscar cortes neste nó */
   }
 
-  if (totcuts > MAX_NUM_CORTES)
+  if (totcuts > TOT_CORTES_MAXIMO)
     ret = 0;
 
   return ret;
