@@ -328,6 +328,45 @@ iterações foi sensivelmente reduzido.
 \end{figure}
 
 
+\subsection{Nós explorados}
+
+A tabela \ref{tab:nodes} segue o mesmo padrão da tabela \ref{tab:tempos}
+
+\begin{table}[htb]
+\centering
+\begin{tabular}[t]{|c|c|c|c|c|c|c|}
+ \hline
+& b00 & b10 & f00 & f01 & f10 & f11 \\ \hline
+eil76\_66 & 242 & 235 & 472 & 129 & 49 & 90 \\ \hline
+kroC100\_70 & 141 & 107 & 77 & 71 & 13 & 53 \\ \hline
+kroB100\_60 & 477 & 49 & 1522 & 506 & 2630 & 383 \\ \hline
+brd14051\_60 & 551 & 77 & 249 & 142 & 26 & 42 \\ \hline
+gil262\_70 & 997 & 63 & 381 & 981 & 75 & 75 \\ \hline
+kroB100\_70 & 540 & 467 & 1500 & 1080 & 327 & 388 \\ \hline
+eil51\_50 & 282 & 23 & 306 & 239 & 15 & 13 \\ \hline
+lin105\_60 & 44 & 41 & 324 & 512 & 11 & 3 \\ \hline
+gil262\_60 & 48 & 1 & 230 & 614 & 5 & 3 \\ \hline
+kroA100\_50 & 198 & 13 & 68 & 141 & 1 & 3 \\ \hline
+brd14051\_70 & 103 & 119 & 275 & 23 & 28 & 23 \\ \hline
+bier127\_60 & 240 & 3 & 249 & 34 & 1 & 1 \\ \hline
+\end{tabular}
+\caption{Número de nós explorados nas instâncias sugeridas}
+\label{tab:nodes}
+\end{table}
+
+Outras observações pertinentes:
+
+\begin{enumerate}
+ \item O uso da heurística primal reduz muito o número de nós
+       explorados, com raríssimas exceções
+ \item Sem a heurística primal, o uso da heurística de cortes ajuda
+       sobremaneira a reduzir o número de nós explorados no algoritmo de
+       \emph{branch and cut}
+ \item Com a heurística primal, o uso de planos de cortes auxilia menos
+       mas também contribui com a diminuição de nós explorados na maior
+       parte dos casos.
+\end{enumerate}
+
 \bibliographystyle{alpha}
 \bibliography{ra009206-044072-texto.bib}
 
