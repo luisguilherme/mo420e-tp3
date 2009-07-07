@@ -16,8 +16,9 @@ class CuttingPlanes {
   int *mrwind, *mgcols;
   char *qgtype;
   double *rhs, *obj, *dlb, *dub, melhor_limitante_dual;
-
+  
 public:
+  int it;
   CuttingPlanes(IntegerProgram &ip, bool hp, int bnc, bool sep, int tle, FILE *arq_est, FILE *arq_sol, int total_cortes = MAX_NUM_CORTES);
   void HeuristicaPrimal(int node);
   bool Corte(int node, double *x, int& ncuts, int** mtype, char** qrtype, double** drhs, int** mstart, int** mcols, double** dmatval);

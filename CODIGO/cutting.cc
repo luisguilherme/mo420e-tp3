@@ -78,6 +78,8 @@ CuttingPlanes::CuttingPlanes(IntegerProgram &ip, bool hp, int bnc, bool sep, int
     // FIXME: colocar em IntegerProgram
     char probname[] = "stab";
 
+    it = 0;
+
     // inicializa arquivos de saida
     arq_est = est;
     arq_sol = sol;
@@ -303,6 +305,8 @@ bool CuttingPlanes::solve(std::vector<double>& xsol) {
   fprintf(arq_est, "%d\n", (int)(zstar+0.5));
   fprintf(arq_est, "%lf\n", melhor_limitante_dual);
 
+  fprintf(stderr,"%d\t%12.6lf\t%12.6lf\t%12.6lf\n",it++,zstar,zstar,melhor_limitante_dual);
+
   /* libera a memoria usada pelo problema */
   xpress_ret=XPRSdestroyprob(prob);
 
@@ -413,7 +417,7 @@ int XPRS_CC Cortes(XPRSprob prob, void* classe)
 
   xpress_ret=XPRSgetdblattrib(prob,XPRS_BESTBOUND,&melhor_limitante_dual);
 
-  fprintf(stderr,"%d\t%12.6lf\t%12.6lf\t%12.6lf\n",node,lpobjval,zstar,melhor_limitante_dual);
+  fprintf(stderr,"%d\t%12.6lf\t%12.6lf\t%12.6lf\n",((CuttingPlanes*) classe)->it++,lpobjval,zstar,melhor_limitante_dual);
   
   /* se for B&B puro e não usar Heurística Primal, não faz nada */
   if ((!BRANCH_AND_CUT) && (!HEURISTICA_PRIMAL)) return 0;
